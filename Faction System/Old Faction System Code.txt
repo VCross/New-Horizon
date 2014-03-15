@@ -1,0 +1,354 @@
+Public Commands = #752
+Public Wizard = #838
+Admin Commands = #753
+Faction Object = #983
+
+think [set(*komilia,mem_faction:5)][atrlock(*komilia/mem_faction,on)][set(*komilia/mem_faction,hidden)]
+
+-----------Basic Faction Outline
+
+%q1 = Faction Number
+
+Leader/Second Syntax=Dbref|Position|Alias
+
+&fac.list`alias #983=Admin|AUN|Merc|Civvy|UN|Pir
+&fac.list`fullname #983=Administration|Anti-UN|Mercenary|Civilian|UN Spacy|Pirate
+
+&fac.1 #983=The MUSH's administration team.
+&fac.1`motd #983=None.
+&fac.1`leader #983=#4|Boss|
+&fac.1`second #983=#7|Mid-Boss|
+&fac.1`members #983=#739|#619
+&fac.1`positions #983=Storyteller|Coder
+&fac.1`alias #983=|
+&fac.1`alias.title #983=Alias
+&fac.1`divisions #983=
+&fac.1`divisions`None #983=#739|#619
+
+&fac.5 #983=The UN Military has been Earth's first and last line of defense since the end of the Unification Wars. The UN forces are broken into several branches, with the UN Spacy being the most famous. While the UN Military, Air force, and Navy are primarily focused on terrestrial defenses both on Earth as well as other worlds, the UN Spacy and UN Space Marines are the forces typically deployed to actual space fleets. The UN Spacy is the organization that handles any and all space fleet activity, including both capital ships as well as space-based VF squadrons. The UNSM meanwhile function as the infantry for the UN Spacy. On the Horizon fleet the UNSM has also been recently graced with the revival of the Destroid unit, a non-transformable mecha that is ideally suited for both point defense as well as defending areas within the city where it is more difficult for a VF to operate. As the MUSH's focus is around the Horizon Fleet anyone apping into the UN Military as a long term character will be either a member of the UN Spacy or the UNSM corps. While there are numerous ships defending the Horizon fleet, the fleet's flagship is the immense, 1.6km long "Battle Horizon" - a New Macross class battle carrier. This serves as the central base of operations for the UN Spacy in this largely unexplored region of space.
+@fo me=&fac.5`motd #983=
+&fac.5`leader #983=#834|Horizon Fleet Commander|Commodore
+&fac.5`second #983=#865|Horizon Fleet CAG|Commander
+&fac.5`members #983=#861|#596|#878|#871|#812|#872|#842|#847|#874|#815|#949|#900|#942
+&fac.5`positions #983=Pilot|Asshole Rock Star|STC/Operations|Marine|Pilot|Admin|Pilot|Pilot|Chief Medical Officer|Marine|Mechanic|Marine|Aggressor Squadron|Doctor/Pilot
+&fac.5`alias #983=Ensign|Special|Lt. Commander|Petty Officer 1st|Lieutenant JG|Ensign|Ensign|Lt. Commander|Chief Petty Officer|Crewman 1st|Petty Officer 2nd|Commander|Ensign
+&fac.5`alias.title #983=Rank
+&fac.5`divisions #983=Command|VF_Squadron|Marines|Support
+&fac.5`divisions`Command #983=#834
+&fac.5`divisions`VF_Squadron #983=#865|#861|#812|#872|#842|#900
+&fac.5`divisions`Marines #983=#871|#874|#948
+&fac.5`divisions`Support #983=#815|#942|#847
+
+-------------List Fac
+
+&cmd_fac-list #752=$+fac/list:think [pemit(%#,[header(Factions Listing)]%r[align(1. 74 1.,[ansi(bh,|)],[iter([get(#983/fac.list`fullname)],[setq(1,[match([get(#983/fac.list`fullname)],[itext(0)],|)])][extract([get(#983/fac.list`alias)],%q1,1,|)] - [itext(0)],|,%r)],[ansi(bh,|)])]%r[sep()])]
+
+-------------View Fac
+
+&cmd_fac-view #752=$^\+fac/view (.+)|^\+fac/view$:think [setq(a,[after([escape(%1)],\\)])][if([setr(1,[match([get(#983/fac.list`alias)],%qa,|)])],[u(#983/output`view)],[if([words(%1)],[pemit(%#,Error, no faction with that alias found. Current factions are: [iter([get(#983/fac.list`alias)],[itext(0)],|,[,%b])])],[setq(1,[get(%#/mem_faction)])][u(#983/output`view)])])]
+@set #752/cmd_fac-view=regexp
+
+&output`view #983=[pemit(%#,[header([extract([v(fac.list`fullname)],%q1,1,|)] Faction Info)]%r[align(1. 74 1.,[ansi(bh,|)],[if([and([lt([words(%qa)],1)],[match([get(%#/mem_faction)],%q1)])],[v(fac.%q1`motd)]%b,[v(fac.%q1)])],[ansi(bh,|)])]%r[sep(Roster)]%r[align(1. 19 19 19 14 1.,[ansi(bh,|)],[ansi(yh,Name)]%r%r[left(^[name([first([v(fac.%q1`leader)],|)])],19)][if([words([v(fac.%q1`second)])],%r[left(*[name([first([v(fac.%q1`second)],|)])],19)],[null()])]%r[iter([v(fac.%q1`members)],[left([name([itext(0)])],19)],|,%r)],[ansi(yh,[left([v(fac.%q1`alias.title)],19)])]%r%r[left([last([v(fac.%q1`leader)],|)],19)][if([words([v(fac.%q1`second)])],%r[left([last([v(fac.%q1`second)],|)],19)],[null()])]%r[iter([v(fac.%q1`alias)],[left([itext(0)],19)],|,%r)],[ansi(yh,Position)]%r%r[left([extract([v(fac.%q1`leader)],2,1,|)],19)][if([words([v(fac.%q1`second)])],%r[left([extract([v(fac.%q1`second)],2,1,|)],19)],[null()])]%r[iter([v(fac.%q1`positions)],[left([itext(0)],19)],|,%r)],[rjust([ansi(yh,Online)],14)]%r%r[iter([first([v(fac.%q1`leader)],|)][if([words([v(fac.%q1`second)])],|[first([v(fac.%q1`second)],|)])]|[v(fac.%q1`members)],[if([and([hasflag([itext(0)],connected)],[switch([hasflag([itext(0)],dark)],0,1,0)])],[rjust([ansi(gh,[timestring([idle([itext(0)])])])],14)],[rjust([ansi(c,[extract([get([itext(0)]/lastlogout)],2,2)])],14)])],|,%r)],[ansi(bh,|)])]%r[sep()])]
+
+-------------Change/view Motd
+
+&cmd_fac-motd #752=$^\+fac/motd (.+)|^\+fac/motd$:think [setq(1,[get(%#/mem_faction)])][setq(a,[edit([after([escape(%1)],\\)],\\,)])][if([words(%qa)],[u(#983/motd`change)],[u(#983/motd`view)])]
+
+@set #752/cmd_fac-motd=regexp
+
+&motd`change #983=[if([match([first([v(fac.%q1`leader)],|)] [first([v(fac.%q1`second)],|)],%#)],[set(me,fac.%q1`motd:%qa)][pemit(%#,[ansi(ch,Faction:)] The MOTD has been changed.)],[pemit(%#,Error, you must be a faction leader to change the MOTD.)])]
+
+&motd`view #983=[pemit(%#,[header([extract([v(fac.list`fullname)],%q1,1,|)] Message of the Day)]%r[v(fac.%q1`motd)]%r[sep()])]
+
+&cmd_amotd #753=$+afac/motd *=*:think [setq(a,[after([escape(%0)],\\)])][setq(b,[edit([after([escape(%1)],\\)],\\,)])][if([setr(1,[match([get(#983/fac.list`alias)],%qa,|)])],[set(#983,fac.%q1`motd:%qb)][pemit(%#,[ansi(ch,Faction:)] The MOTD for the [extract([get(#983/fac.list`fullname)],%q1,1,|)] faction has been changed.)],[pemit(%#,Error, no faction with that alias found. Current factions are: [iter([get(#983/fac.list`alias)],[itext(0)],|,[,%b])])])]
+
+-------------Change Desc
+
+&cmd_fac-desc #752=$+fac/desc *:think [setq(1,[get(%#/mem_faction)])][setq(a,[edit([after([escape(%0)],\\)],\\,)])][u(#983/desc`change)]
+
+&desc`change #983=[if([match([first([v(fac.%q1`leader)],|)] [first([v(fac.%q1`second)],|)],%#)],[set(me,fac.%q1:%qa)][pemit(%#,[ansi(ch,Faction:)] The faction description has been changed.)],[pemit(%#,Error, you must be a faction leader to change the description.)])]
+
+&cmd_afac-desc #753=$+afac/desc *=*:think [setq(a,[after([escape(%0)],\\)])][setq(b,[edit([after([escape(%1)],\\)],\\,)])][if([setr(1,[match([get(#983/fac.list`alias)],%qa,|)])],[set(#983,fac.%q1:%qb)][pemit(%#,[ansi(ch,Faction:)] The description for the [extract([get(#983/fac.list`fullname)],%q1,1,|)] faction has been changed.)],[pemit(%#,Error, no faction with that alias found. Current factions are: [iter([get(#983/fac.list`alias)],[itext(0)],|,[,%b])])])]
+
+
+-------------Add Member
+
+1: Faction #
+a: Player
+d: Player dbref
+
+&cmd_fac-add #838=$+fac/add *:think [setq(1,[get(%#/mem_faction)])][setq(a,[after([escape(%0)],\\)])][if([match([first([get(#983/fac.%q1`leader)],|)] [first([get(#983/fac.%q1`second)],|)],%#)],[u(#983/member`add)],[pemit(%#,Error, you must be a faction leader to add a member.)])];think [if(%q8,[set(%qd,mem_faction:%q1)][atrlock(%qd/mem_faction,on)][set(%qd/mem_faction,hidden)])]
+
+&member`add #983=[if([and([switch([hastype(*%qa,player)],1,1,0[setq(9,P)])],[switch([hasattrval(*%qa,mem_faction)],1,0[setq(9,F)],1)])],[setq(d,[num(*%qa)])][setq(8,1)][set(me,fac.%q1`members:[if([hasattrval(#983,fac.%q1`members)],[insert([v(fac.%q1`members)],-1,%qd,|)],%qd)])][set(me,fac.%q1`alias:[if([hasattrval(#983,fac.%q1`alias)],[insert([v(fac.%q1`alias)],-1,,|)],Temp)])][set(me,fac.%q1`positions:[if([hasattrval(#983,fac.%q1`positions)],[insert([v(fac.%q1`positions)],-1,,|)],Temp)])][pemit(%#,[ansi(ch,Faction:)] [name(%qd)] has been added to the faction.)][pemit(%qd,[ansi(ch,Faction:)] You've been added to the [extract([v(fac.list`fullname)],%q1,1,|)] faction.)],[switch(%q9,P,[pemit(%#,Error, cannot find a player by that name.)],F,[pemit(%#,Error, that player is already in a faction.)])])]
+
+&cmd_afac-add #99=$+afac/add *=*:think [setq(a,[after([escape(%1)],\\)])][setq(b,[after([escape(%0)],\\)])][if([setr(1,[match([get(#983/fac.list`alias)],%qb,|)])],[u(#983/member`add)],[pemit(%#,Error, no faction with that alias found. Current factions are: [iter([get(#983/fac.list`alias)],[itext(0)],|,[,%b])])])];think [if(%q8,[set(%qd,mem_faction:%q1)][atrlock(%qd/mem_faction,on)][set(%d/mem_faction,hidden)])]
+
+
+----------------Rem Member
+
+1: faction #
+a: player
+d: player dbref
+b: position in lists
+
+&cmd_fac-rem #838=$+fac/rem *:think [setq(1,[get(%#/mem_faction)])][setq(a,[after([escape(%0)],\\)])][if([match([first([get(#983/fac.%q1`leader)],|)] [first([get(#983/fac.%q1`second)],|)],%#)],[u(#983/member`rem)],[pemit(%#,Error, you must be a faction leader to remove a member.)])];think [if(%q8,[set(%qd,mem_faction:)])]
+
+&member`rem #983=[if([and([switch([hastype(*%qa,player)],1,1,0[setq(9,P)])],[switch([get([setr(d,[num(*%qa)])]/mem_faction)],%q1,1,0[setq(9,F)])])],[u(member`rem.2)],[switch(%q9,P,[pemit(%#,Error, cannot find a player by that name.)],F,[pemit(%#,Error, that player is not in your faction.)])])]
+
+&member`rem.2 #983=[if([setr(b,[match([v(fac.%q1`members)],%qd,|)])],[setq(8,1)][set(me,fac.%q1`members:[ldelete([v(fac.%q1`members)],%qb,|)])][set(me,fac.%q1`alias:[ldelete([v(fac.%q1`alias)],%qb,|)])][set(me,fac.%q1`positions:[ldelete([v(fac.%q1`positions)],%qb,|)])][iter([grep(#983,fac.%q1`divisions`*,%qd)],[set(me,%i0:[remove([v(%i0)],%qd,|)])])][pemit(%#,[ansi(ch,Faction:)] [name(%qd)] has been removed from the faction.)][pemit(%qd,[ansi(ch,Faction:)] You've been removed from the [extract([v(fac.list`fullname)],%q1,1,|)] faction.)],[pemit(%#,Error, that command cannot be used to remove a faction's leader or second in command.)])]
+
+&cmd_afac-rem #99=$+afac/rem *=*:think [setq(a,[after([escape(%1)],\\)])][setq(b,[after([escape(%0)],\\)])][if([setr(1,[match([get(#983/fac.list`alias)],%qb,|)])],[u(#983/member`rem)],[pemit(%#,Error, no faction with that alias found. Current factions are: [iter([get(#983/fac.list`alias)],[itext(0)],|,[,%b])])])];think [if(%q8,[set(%qd,mem_faction:)])]
+
+
+-------------------Mem Alias
+
+1: faction #
+a: player
+b: alias
+c: player dbref
+d: position in list
+
+&cmd_fac-alias #838=$+fac/alias *=*:think [setq(1,[get(%#/mem_faction)])][setq(a,[after([escape(%0)],\\)])][setq(b,[edit([after([escape(%1)],\\)],\\,)])][if([match([first([get(#983/fac.%q1`leader)],|)] [first([get(#983/fac.%q1`second)],|)],%#)],[u(#983/member`alias)],[pemit(%#,Error, you must be a faction leader to change a member's alias.)])]
+
+&member`alias #983=[if([hastype(*%qa,player)],[setq(c,[num(*%qa)])][if([setr(d,[match([first([get(#983/fac.%q1`leader)],|)]|[first([get(#983/fac.%q1`second)],|)]|[v(fac.%q1`members)],%qc,|)])],[switch(%qd,1,[set(me,fac.%q1`leader:[replace([v(fac.%q1`leader)],3,%qb,|)])],2,[set(me,fac.%q1`second:[replace([v(fac.%q1`second)],3,%qb,|)])],[set(me,fac.%q1`alias:[replace([v(fac.%q1`alias)],[sub(%qd,2)],%qb,|)])])][pemit(%#,[ansi(ch,Faction:)] [name(%qc)]'s alias has been changed to [ansi(ch,%qb)].)][pemit(%qc,[ansi(ch,Faction:)] Your faction alias has been changed to [ansi(ch,%qb)].)],[pemit(%#,Error, that player is not currently in [switch(%@,#838,your,#99,that)] faction.)])],[pemit(%#,Error, cannot find a player of that name.)])]
+
+&cmd_afac-alias #99=$+afac/alias *=*=*:think [setq(1,[after([escape(%0)],\\)])][setq(a,[after([escape(%1)],\\)])][setq(b,[edit([after([escape(%2)],\\)],\\,)])][if([setr(1,[match([get(#983/fac.list`alias)],%q1,|)])],[u(#983/member`alias)],[pemit(%#,Error, no faction with that alias found. Current factions are: [iter([get(#983/fac.list`alias)],[itext(0)],|,[,%b])])])]
+
+--------------------Mem Position
+
+1: faction #
+a: player
+b: alias
+c: player dbref
+d: position in list
+
+&cmd_fac-pos #838=$+fac/pos *=*:think [setq(1,[get(%#/mem_faction)])][setq(a,[after([escape(%0)],\\)])][setq(b,[edit([after([escape(%1)],\\)],\\,)])][if([match([first([get(#983/fac.%q1`leader)],|)] [first([get(#983/fac.%q1`second)],|)],%#)],[u(#983/member`positions)],[pemit(%#,Error, you must be a faction leader to change a member's position.)])]
+
+&member`positions #983=[if([hastype(*%qa,player)],[setq(c,[num(*%qa)])][if([setr(d,[match([first([get(#983/fac.%q1`leader)],|)]|[first([get(#983/fac.%q1`second)],|)]|[v(fac.%q1`members)],%qc,|)])],[switch(%qd,1,[set(me,fac.%q1`leader:[replace([v(fac.%q1`leader)],2,%qb,|)])],2,[set(me,fac.%q1`second:[replace([v(fac.%q1`second)],2,%qb,|)])],[set(me,fac.%q1`positions:[replace([v(fac.%q1`positions)],[sub(%qd,2)],%qb,|)])])][pemit(%#,[ansi(ch,Faction:)] [name(%qc)]'s position has been changed to [ansi(ch,%qb)].)][pemit(%qc,[ansi(ch,Faction:)] Your faction position has been changed to [ansi(ch,%qb)].)],[pemit(%#,Error, that player is not currently in [switch(%@,#838,your,#99,that)] faction.)])],[pemit(%#,Error, cannot find a player of that name.)])]
+
+&cmd_afac-pos #99=$+afac/pos *=*=*:think [setq(1,[after([escape(%0)],\\)])][setq(a,[after([escape(%1)],\\)])][setq(b,[edit([after([escape(%2)],\\)],\\,)])][if([setr(1,[match([get(#983/fac.list`alias)],%q1,|)])],[u(#983/member`positions)],[pemit(%#,Error, no faction with that alias found. Current factions are: [iter([get(#983/fac.list`alias)],[itext(0)],|,[,%b])])])]
+
+
+--------------Set & Rem Second
+
+1: faction #
+a: player
+b: player dbref
+c: Memember position
+
+&cmd_fac-sadd #838=$+fac/second *:think [setq(1,[get(%#/mem_faction)])][setq(a,[after([escape(%0)],\\)])][if([match([first([get(#983/fac.%q1`leader)],|)] [first([get(#983/fac.%q1`second)],|)],%#)],[u(#983/second`add)],[pemit(%#,Error, you must be a faction leader to choose the faction second.)])];think [switch(%q9,1,[set(%qb,mem_faction:%q1)][atrlock(%qb/mem_faction,on)][set(%b/mem_faction,hidden)])]
+
+&second`add #983=[if([hastype(*%qa,player)],[setq(b,[num(*%qa)])][switch([get(%qb/mem_faction)],%q1,[u(second`add.existing)],,[u(second`add.new)],[pemit(%#,Error, that player is in another faction.)])],[pemit(%#,Error, cannot find a player of that name.)])]
+
+&second`add.existing #983=[switch([match([first([get(#983/fac.%q1`leader)],|)] [first([get(#983/fac.%q1`second)],|)],%qb)],2,[pemit(%#,Error, cannot add player as second as they are already in that position.)],1,[pemit(%#,Error, cannot add the leader of the faction as the faction second.)],[if([hasattrval(me,fac.%q1`second)],[if([hasattrval(me,fac.%q1`members)],[set(me,fac.%q1`members:[insert([v(fac.%q1`members)],-1,[first([get(#983/fac.%q1`second)],|)],|)])],[set(me,fac.%q1`members:[first([get(#983/fac.%q1`second)],|)])])][if([hasattrval(me,fac.%q1`alias)],[set(me,fac.%q1`alias:[insert([v(fac.%q1`alias)],-1,,|)])],[set(me,fac.%q1`alias:Temp)])][if([hasattrval(me,fac.%q1`positions)],[set(me,fac.%q1`positions:[insert([v(fac.%q1`positions)],-1,,|)])],[set(me,fac.%q1`positions:Temp)])][pemit([first([get(#983/fac.%q1`second)],|)],[ansi(ch,Faction:)] You have been reduced down to a normal member.)])][setr(c,[match([v(fac.%q1`members)],%qb,|)])][set(me,fac.%q1`members:[ldelete([v(fac.%q1`members)],%qc,|)])][set(me,fac.%q1`alias:[ldelete([v(fac.%q1`alias)],%qc,|)])][set(me,fac.%q1`positions:[ldelete([v(fac.%q1`positions)],%qc,|)])][set(me,fac.%q1`second:%qb||)][pemit(%#,[ansi(ch,Faction:)] [name(%qb)] has been designated as the faction's second.)][pemit(%qb,[ansi(ch,Faction:)] You have been moved up to the faction's second.)])]
+
+&second`add.new #983=[if([hasattrval(me,fac.%q1`second)],[if([hasattrval(me,fac.%q1`members)],[set(me,fac.%q1`members:[insert([v(fac.%q1`members)],-1,[first([get(#983/fac.%q1`second)],|)],|)])],[set(me,fac.%q1`members:[first([get(#983/fac.%q1`second)],|)])])][if([hasattrval(me,fac.%q1`alias)],[set(me,fac.%q1`alias:[insert([v(fac.%q1`alias)],-1,,|)])],[set(me,fac.%q1`alias:Temp)])][if([hasattrval(me,fac.%q1`positions)],[set(me,fac.%q1`positions:[insert([v(fac.%q1`positions)],-1,[first([get(#983/fac.%q1`second)],|)],|)])],[set(me,fac.%q1`positions:Temp)])][pemit([first([get(#983/fac.%q1`second)],|)],[ansi(ch,Faction:)] You have been reduced down to a normal member.)])][setq(9,1)][set(me,fac.%q1`second:%qb||)][pemit(%#,[ansi(ch,Faction:)] [name(%qb)] has been designated as the faction's second.)][pemit(%qb,[ansi(ch,Faction:)] You have been signed up as the [extract([v(fac.list`fullname)],%q1,1,|)] faction's second.)])]
+
+&cmd_afac-sadd #99=$+afac/second *=*:think [setq(1,[after([escape(%0)],\\)])][setq(a,[after([escape(%1)],\\)])][if([setr(1,[match([get(#983/fac.list`alias)],%q1,|)])],[u(#983/second`add)],[pemit(%#,Error, no faction with that alias found. Current factions are: [iter([get(#983/fac.list`alias)],[itext(0)],|,[,%b])])])];think [switch(%q9,1,[set(%qb,mem_faction:%q1)][atrlock(%qb/mem_faction,on)][set(%b/mem_faction,hidden)])]
+
+&cmd_fac-srem #838=$+fac/remsec:think [setq(1,[get(%#/mem_faction)])][if([match([first([get(#983/fac.%q1`leader)],|)] [first([get(#983/fac.%q1`second)],|)],%#)],[u(#983/second`rem)],[pemit(%#,Error, you must be a faction leader to remove the faction second.)])]
+
+&second`rem #983=[if([hasattrval(me,fac.%q1`members)],[set(me,fac.%q1`members:[insert([v(fac.%q1`members)],-1,[first([get(#983/fac.%q1`second)],|)],|)])],[set(me,fac.%q1`members:[first([get(#983/fac.%q1`second)],|)])])][if([hasattrval(me,fac.%q1`alias)],[set(me,fac.%q1`alias:[insert([v(fac.%q1`alias)],-1,,|)])],[set(me,fac.%q1`alias:Temp)])][if([hasattrval(me,fac.%q1`positions)],[set(me,fac.%q1`positions:[insert([v(fac.%q1`positions)],-1,,|)])],[set(me,fac.%q1`positions:Temp)])][pemit(%#,[ansi(ch,Faction:)] [name([first([get(#983/fac.%q1`second)],|)])] has been removed as the faction's second.)][pemit([first([get(#983/fac.%q1`second)],|)],[ansi(ch,Faction:)] You have been removed as the faction's second.)][set(me,fac.%q1`second:)]
+
+&cmd_afac-srem #99=$+afac/remsec *:think [setq(1,[after([escape(%0)],\\)])][if([setr(1,[match([get(#983/fac.list`alias)],%q1,|)])],[u(#983/second`rem)],[pemit(%#,Error, no faction with that alias found. Current factions are: [iter([get(#983/fac.list`alias)],[itext(0)],|,[,%b])])])]
+
+
+---------------
+---Divisions---
+---------------
+
+---------------Create Divisions v1
+
+1: Faction #
+a: Division Name
+b: faction name
+
+&cmd_fac-dadd #752=$+fac/divadd *:think [setq(1,[get(%#/mem_faction)])][setq(a,[edit([after([escape(%0)],\\)],\\,)])][if([match([first([get(#983/fac.%q1`leader)],|)] [first([get(#983/fac.%q1`second)],|)],%#)],[u(#983/division`add)],[pemit(%#,Error, you must be a faction leader to add a division.)])]
+
+&division`add #983=[if([match([v(fac.%q1`divisions)],%qa,|)],[pemit(%#,Error, there is already a division by that name in the faction.)],[if([hasattrval(me,fac.%q1`divisions)],[set(me,fac.%q1`divisions:[insert([v(fac.%q1`divisions)],-1,[edit(%qa,%b,_)],|)])],[set(me,fac.%q1`divisions:[edit(%qa,%b,_)])])][set(me,fac.%q1`divisions`[edit(%qa,%b,_)]:P)][pemit(%#,[ansi(ch,Faction:)] A division called [ansi(ch,%qa)] has been added to the faction.)])]
+
+&cmd_afac-dadd #753=$+afac/divadd *=*:think [setq(a,[edit([after([escape(%1)],\\)],\\,)])][setq(b,[after([escape(%0)],\\)])][if([setr(1,[match([get(#983/fac.list`alias)],%qb,|)])],[u(#983/division`add)],[pemit(%#,Error, no faction with that alias found. Current factions are: [iter([get(#983/fac.list`alias)],[itext(0)],|,[,%b])])])]
+
+---------------Create Divisions v2
+
+1: Faction #
+a: Division Name
+b: faction name
+
+&cmd_fac-dadd #752=$+fac/divadd *:think [setq(1,[get(%#/mem_faction)])][setq(a,[edit([after([escape(%0)],\\)],\\,)])][if([match([first([get(#983/fac.%q1`leader)],|)] [first([get(#983/fac.%q1`second)],|)],%#)],[u(#983/division`add)],[pemit(%#,Error, you must be a faction leader to add a division.)])]
+
+&division`add #983=[if([setr(n,[match([setr(l,[lattr(me/fac.%q1`divisions`*)] [lattr(me/fac.%q1`divisions`*`*)])],*`[edit(%qa,%b,_)])])],[pemit(%#,Error, there is already a division by that name in the faction.)],[if([hasattrval(me,fac.%q1`divisions)],[set(me,fac.%q1`divisions:[insert([v(fac.%q1`divisions)],-1,[edit(%qa,%b,_)],|)])],[set(me,fac.%q1`divisions:[edit(%qa,%b,_)])])][set(me,fac.%q1`divisions`[edit(%qa,%b,_)]:)][pemit(%#,[ansi(ch,Faction:)] A division called [ansi(ch,%qa)] has been added to the faction.)])]
+
+&cmd_afac-dadd #753=$+afac/divadd *=*:think [setq(a,[edit([after([escape(%1)],\\)],\\,)])][setq(b,[after([escape(%0)],\\)])][if([setr(1,[match([get(#983/fac.list`alias)],%qb,|)])],[u(#983/division`add)],[pemit(%#,Error, no faction with that alias found. Current factions are: [iter([get(#983/fac.list`alias)],[itext(0)],|,[,%b])])])]
+
+
+
+----------------Delete Divisions
+
+1: Faction #
+a: Division Name
+b: Faction Name
+c: Position of division in list
+
+&cmd_fac-ddel #752=$+fac/divdel *:think [setq(1,[get(%#/mem_faction)])][setq(a,[edit([after([escape(%0)],\\)],\\,)])][if([match([first([get(#983/fac.%q1`leader)],|)] [first([get(#983/fac.%q1`second)],|)],%#)],[u(#983/division`del)],[pemit(%#,Error, you must be a faction leader to delete a division.)])]
+
+&division`del #983=[if([setr(c,[match([v(fac.%q1`divisions)],[edit(%qa,%b,_)],|)])],[set(me,fac.%q1`divisions:[ldelete([v(fac.%q1`divisions)],%qc,|)])][attrib_set(me/fac.%q1`divisions`[edit(%qa,%b,_)])][pemit(%#,[ansi(ch,Faction:)] The division [ansi(ch,%qa)] has been deleted from the faction.)],[pemit(%#,Error, there is no division by that name in the faction.)])]
+
+&cmd_afac-ddel #753=$+afac/divdel *=*:think [setq(a,[edit([after([escape(%1)],\\)],\\,)])][setq(b,[after([escape(%0)],\\)])][if([setr(1,[match([get(#983/fac.list`alias)],%qb,|)])],[u(#983/division`del)],[pemit(%#,Error, no faction with that alias found. Current factions are: [iter([get(#983/fac.list`alias)],[itext(0)],|,[,%b])])])]
+
+----------------Delete Divisions v2
+
+1: Faction #
+a: Division Name
+b: Faction Name
+c: position of main division in list
+n: num of division in full
+l: list of divisions
+m: division attribute
+
+&cmd_fac-ddel #752=$+fac/divdel *:think [setq(1,[get(%#/mem_faction)])][setq(a,[edit([after([escape(%0)],\\)],\\,)])][if([match([first([get(#983/fac.%q1`leader)],|)] [first([get(#983/fac.%q1`second)],|)],%#)],[u(#983/division`del)],[pemit(%#,Error, you must be a faction leader to delete a division.)])]
+
+&division`del #983=[if([setr(n,[match([setr(l,[lattr(me/fac.%q1`divisions`*)] [lattr(me/fac.%q1`divisions`*`*)])],*`[edit(%qa,%b,_)])])],[setq(m,[elements(%ql,%qn)])][if([setr(c,[match([v(fac.%q1`divisions)],[edit(%qa,%b,_)],|)])],[set(me,fac.%q1`divisions:[ldelete([v(fac.%q1`divisions)],%qc,|)])])][switch([nattr(me/%qm`*)],0,,[iter([lattr(me/%qm`*)],[attrib_set(me/[itext(0)])])])][attrib_set(me/%qm)][pemit(%#,[ansi(ch,Faction:)] The division [ansi(ch,%qa)] has been deleted from the faction.)],[pemit(%#,Error, there is no division by that name in the faction.)])]
+
+&cmd_afac-ddel #753=$+afac/divdel *=*:think [setq(a,[edit([after([escape(%1)],\\)],\\,)])][setq(b,[after([escape(%0)],\\)])][if([setr(1,[match([get(#983/fac.list`alias)],%qb,|)])],[u(#983/division`del)],[pemit(%#,Error, no faction with that alias found. Current factions are: [iter([get(#983/fac.list`alias)],[itext(0)],|,[,%b])])])]
+
+---------------View Divisions v1
+
+9: P or S
+
+&cmd_fac-dview #752=$^\+fac/div (.+)|^\+fac/div$:think [setq(a,[after([escape(%1)],\\)])][if([setr(1,[match([get(#983/fac.list`alias)],%qa,|)])],[u(#983/output`division)],[if([words(%1)],[pemit(%#,Error, no faction with that alias found. Current factions are: [iter([get(#983/fac.list`alias)],[itext(0)],|,[,%b])])],[setq(1,[get(%#/mem_faction)])][u(#983/output`division)])])]
+@set #752/cmd_fac-dview=regexp
+
+&output`division #983=[pemit(%#,[header([extract([v(fac.list`fullname)],%q1,1,|)] Division Info)]%r[iter([v(fac.%q1`divisions)],[align(1. 74 1.,[ansi(bh,|)],[switch([setr(9,[first([v(fac.%q1`divisions`[itext(0)])],|)])],P,[ansi(yh,[edit([itext(0)],_,%b)])],S,[space(5)][ansi(rh,[edit([itext(0)],_,%b)])])]%r[table([iter([rest([v(fac.%q1`divisions`[itext(0)])],|)],[switch(%q9,P,[null()],S,[space(5)])][name([itext(0)])],|,|)],[switch(%q9,P,23,S,22)],[switch(%q9,P,74,S,69)],|)],[ansi(bh,|)])],|,%r[ansi(bh,|)][space(76)][ansi(bh,|)]%r)]%r[sep()])]
+
+---------------View Divisions v2
+
+9: P or S
+s: List of subdivisions
+
+&cmd_fac-dview #752=$^\+fac/div (.+)|^\+fac/div$:think [setq(a,[after([escape(%1)],\\)])][if([setr(1,[match([get(#983/fac.list`alias)],%qa,|)])],[u(#983/output`division)],[if([words(%1)],[pemit(%#,Error, no faction with that alias found. Current factions are: [iter([get(#983/fac.list`alias)],[itext(0)],|,[,%b])])],[setq(1,[get(%#/mem_faction)])][u(#983/output`division)])])]
+@set #752/cmd_fac-dview=regexp
+
+&output`division #983=[pemit(%#,[header([extract([v(fac.list`fullname)],%q1,1,|)] Division Info)]%r[iter([v(fac.%q1`divisions)],[align(1. 74 1.,[ansi(bh,|)],[ansi(yh,[edit([itext(0)],_,%b)])]%r[table([iter([v(fac.%q1`divisions`[itext(0)])],[name([itext(0)])],|,|)],23,74,|)],[ansi(bh,|)])][switch([words([setr(s,[lattr(me/fac.%q1`divisions`[itext(0)]`*)])])],0,,%r[align(1. 74 1.,[ansi(bh,|)],[iter(%qs,[space(5)][ansi(rh,[first([v([itext(0)])],|)])]%r[table([iter([rest([v([itext(0)])],|)],[space(5)][name([itext(0)])],|,|)],22,69,|)],,%r%r)],[ansi(bh,|)])])],|,%r[ansi(bh,|)][space(76)][ansi(bh,|)]%r)]%r[sep()])]
+
+---------------Assign to division
+
+1: Faction #
+a: Player Name
+b: Division
+c: Faction Name
+d: Player dbref
+
+&cmd_fac-assign #752=$+fac/assign *=*:[setq(1,[get(%#/mem_faction)])][setq(a,[after([escape(%0)],\\)])][setq(b,[after([escape(%1)],\\)])][if([match([first([get(#983/fac.%q1`leader)],|)] [first([get(#983/fac.%q1`second)],|)],%#)],[u(#983/division`assign)],[pemit(%#,Error, you must be a faction leader to assign someone to a division.)])]
+
+&division`assign #983=[if([hastype(*%qa,player)],[setq(d,[num(*%qa)])][if([match([v(fac.%q1`divisions)],[edit(%qb,%b,_)],|)],[if([hasattrval(me,fac.%q1`divisions`[edit(%qb,%b,_)])],[if([rest([match([v(fac.%q1`divisions`[edit(%qb,%b,_)])],|)],%qd,|)],[pemit(%#,Error, that player is already in that division.)],[u(division`assign`message)][set(me,fac.%q1`divisions`[edit(%qb,%b,_)]:[insert([v(fac.%q1`divisions`[edit(%qb,%b,_)])],-1,%qd,|)])])],[u(division`assign`message)][set(me,fac.%q1`divisions`[edit(%qb,%b,_)]:%qd)])],[pemit(%#,Error, there is no division by that name in the faction.)])],[pemit(%#,Error, either there is no player by that name or multiple matches found.)])]
+
+&division`assign`message #983=[pemit(%#,[ansi(ch,Faction:)] [ansi(ch,[name(%qd)])] has been assigned to the division [ansi(ch,%qb)].)][pemit(%qd,[ansi(ch,Faction:)] You have been assigned to the division [ansi(ch,%qb)].)]
+
+&cmd_afac-assign #753=$+afac/assign *=*=*:think [setq(a,[edit([after([escape(%1)],\\)],\\,)])][setq(b,[after([escape(%2)],\\)])][setq(c,[edit([after([escape(%0)],\\)],\\,)])][if([setr(1,[match([get(#983/fac.list`alias)],%qc,|)])],[u(#983/division`assign)],[pemit(%#,Error, no faction with that alias found. Current factions are: [iter([get(#983/fac.list`alias)],[itext(0)],|,[,%b])])])]
+
+---------------Assign to division v2
+
+1: Faction #
+a: Player Name
+b: Division
+c: Faction Name
+d: Player dbref
+l: full list of divisions
+n: number of division to extract
+m: division attribute
+
+&cmd_fac-assign #752=$+fac/assign *=*:[setq(1,[get(%#/mem_faction)])][setq(a,[after([escape(%0)],\\)])][setq(b,[after([escape(%1)],\\)])][if([match([first([get(#983/fac.%q1`leader)],|)] [first([get(#983/fac.%q1`second)],|)],%#)],[u(#983/division`assign)],[pemit(%#,Error, you must be a faction leader to assign someone to a division.)])]
+
+&division`assign #983=[if([hastype(*%qa,player)],[setq(d,[num(*%qa)])][if([setr(n,[match([setr(l,[lattr(me/fac.%q1`divisions`*)] [lattr(me/fac.%q1`divisions`*`*)])],*`[edit(%qb,%b,_)])])],[setq(m,[elements(%ql,%qn)])][if([hasattrval(me,%qm)],[if([match([v(%qm)],%qd,|)],[pemit(%#,Error, that player is already in that division.)],[u(division`assign`message)][set(me,%qm:[insert([v(%qm)],-1,%qd,|)])])],[u(division`assign`message)][set(me,%qm:%qd)])],[pemit(%#,Error, there is no division by that name in the faction.)])],[pemit(%#,Error, either there is no player by that name or multiple matches found.)])]
+
+&division`assign`message #983=[pemit(%#,[ansi(ch,Faction:)] [ansi(ch,[name(%qd)])] has been assigned to the division [ansi(ch,%qb)].)][pemit(%qd,[ansi(ch,Faction:)] You have been assigned to the division [ansi(ch,%qb)].)]
+
+&cmd_afac-assign #753=$+afac/assign *=*=*:think [setq(a,[edit([after([escape(%1)],\\)],\\,)])][setq(b,[after([escape(%2)],\\)])][setq(c,[edit([after([escape(%0)],\\)],\\,)])][if([setr(1,[match([get(#983/fac.list`alias)],%qc,|)])],[u(#983/division`assign)],[pemit(%#,Error, no faction with that alias found. Current factions are: [iter([get(#983/fac.list`alias)],[itext(0)],|,[,%b])])])]
+
+--------------Unassign from Division
+
+1: Faction #
+a: Player Name
+b: Division
+c: Faction Name
+d: Player dbref
+
+&cmd_fac-unassign #752=$+fac/unassign *=*:[setq(1,[get(%#/mem_faction)])][setq(a,[after([escape(%0)],\\)])][setq(b,[after([escape(%1)],\\)])][if([match([first([get(#983/fac.%q1`leader)],|)] [first([get(#983/fac.%q1`second)],|)],%#)],[u(#983/division`unassign)],[pemit(%#,Error, you must be a faction leader to unassign someone from a division.)])]
+
+&division`unassign #983=[if([hastype(*%qa,player)],[setq(d,[num(*%qa)])][if([match([v(fac.%q1`divisions)],[edit(%qb,%b,_)],|)],[if([match([rest([v(fac.%q1`divisions`[edit(%qb,%b,_)])],|)],%qd,|)],[set(me,fac.%q1`divisions`[edit(%qb,%b,_)]:[remove([v(fac.%q1`divisions`[edit(%qb,%b,_)])],%qd,|)])][u(division`unassign`message)],[pemit(%#,Error, that player is not in that division.)])],[pemit(%#,Error, there is no division by that name in the faction.)])],[pemit(%#,Error, either there is no player by that name or multiple matches found.)])]
+
+&division`unassign`message #983=[pemit(%#,[ansi(ch,Faction:)] [ansi(ch,[name(%qd)])] has been unassigned from the division [ansi(ch,%qb)].)][pemit(%qd,[ansi(ch,Faction:)] You have been unassigned from the division [ansi(ch,%qb)].)]
+
+&cmd_afac-unassign #753=$+afac/unassign *=*=*:think [setq(a,[edit([after([escape(%1)],\\)],\\,)])][setq(b,[after([escape(%2)],\\)])][setq(c,[edit([after([escape(%0)],\\)],\\,)])][if([setr(1,[match([get(#983/fac.list`alias)],%qc,|)])],[u(#983/division`unassign)],[pemit(%#,Error, no faction with that alias found. Current factions are: [iter([get(#983/fac.list`alias)],[itext(0)],|,[,%b])])])]
+
+--------------Unassign from Division v2
+
+1: Faction #
+a: Player Name
+b: Division
+c: Faction Name
+d: Player dbref
+n: number to extract from
+l: full list of divisions
+m: division attribute
+
+&cmd_fac-unassign #752=$+fac/unassign *=*:[setq(1,[get(%#/mem_faction)])][setq(a,[after([escape(%0)],\\)])][setq(b,[after([escape(%1)],\\)])][if([match([first([get(#983/fac.%q1`leader)],|)] [first([get(#983/fac.%q1`second)],|)],%#)],[u(#983/division`unassign)],[pemit(%#,Error, you must be a faction leader to unassign someone from a division.)])]
+
+&division`unassign #983=[if([hastype(*%qa,player)],[setq(d,[num(*%qa)])][if([setr(n,[match([setr(l,[lattr(me/fac.%q1`divisions`*)] [lattr(me/fac.%q1`divisions`*`*)])],*`[edit(%qb,%b,_)])])],[setq(m,[elements(%ql,%qn)])][if([match([v(%qm)],%qd,|)],[set(me,%qm:[remove([v(%qm)],%qd,|)])][u(division`unassign`message)],[pemit(%#,Error, that player is not in that division.)])],[pemit(%#,Error, there is no division by that name in the faction.)])],[pemit(%#,Error, either there is no player by that name or multiple matches found.)])]
+
+&division`unassign`message #983=[pemit(%#,[ansi(ch,Faction:)] [ansi(ch,[name(%qd)])] has been unassigned from the division [ansi(ch,%qb)].)][pemit(%qd,[ansi(ch,Faction:)] You have been unassigned from the division [ansi(ch,%qb)].)]
+
+&cmd_afac-unassign #753=$+afac/unassign *=*=*:think [setq(a,[edit([after([escape(%1)],\\)],\\,)])][setq(b,[after([escape(%2)],\\)])][setq(c,[edit([after([escape(%0)],\\)],\\,)])][if([setr(1,[match([get(#983/fac.list`alias)],%qc,|)])],[u(#983/division`unassign)],[pemit(%#,Error, no faction with that alias found. Current factions are: [iter([get(#983/fac.list`alias)],[itext(0)],|,[,%b])])])]
+
+----------New Faction
+
+&cmd_afac-newfac #753=$+afac/newfac *=*=?:think [setq(a,[edit([after([escape(%0)],\\)],\\,)])][setq(b,[edit([after([escape(%1)],\\)],\\,)])][set(#983,fac.list`alias:[insert([get(#983/fac.list`alias)],-1,%qa,|)])][set(#983,fac.list`short:[insert([get(#983/fac.list`short)],-1,%2,|)])][set(#983,fac.list`fullname:[insert([get(#983/fac.list`fullname)],-1,%qb,|)])][pemit(%#,[ansi(ch,Faction:)] A new faction has been created with the alias [ansi(ch,%qa)] and the fullname [ansi(ch,%qb)].)]
+
+----------Set/Change Leader
+
+a: faction
+b: player name
+c: player dbref
+1: faction #
+
+&cmd_afac-leader #99=$+afac/leader *=*:think [setq(a,[edit([after([escape(%0)],\\)],\\,)])][setq(b,[edit([after([escape(%1)],\\)],\\,)])][if([setr(1,[match([get(#983/fac.list`alias)],%qa,|)])],[if([hastype(*%qb,player)],[if([hasattrval(%qb,mem_faction)],[pemit(%#,Error, that player is already in a faction.)],[if([hasattrval(#983,fac.%q1`leader)],[set(#983,fac.%q1`members:[insert([get(#983/fac.%q1`members)],-1,[first([get(#983/fac.%q1`leader)],|)],|)])][set(#983,fac.%q1`alias:[insert([get(#983/fac.%q1`alias)],-1,[last([get(#983/fac.%q1`leader)],|)],|)])][set(#983,fac.%q1`positions:[insert([get(#983/fac.%q1`positions)],-1,[extract([get(#983/fac.%q1`leader)],2,1,|)],|)])][pemit([first([get(#983/fac.%q1`leader)],|)],[ansi(ch,Faction:)] You have been removed as the faction's leader.)])][setq(c,[num(*%qb)])][set(%qc,mem_faction:%q1)][atrlock(%qc/mem_faction,on)][set(%qc/mem_faction,hidden)][set(#983,fac.%q1`leader:%qc||)][pemit(%#,[ansi(ch,Faction:)] [ansi(ch,[name(%qc)])] has been made leader of the [extract([get(#983/fac.list`fullname)],%q1,1,|)] faction.)][pemit(%qc,[ansi(ch,Faction:)] You have been made leader of the [extract([get(#983/fac.list`fullname)],%q1,1,|)] faction.)])],[pemit(%#,Error, either there is no player by that name or multiple matches found.)])],[pemit(%#,Error, no faction with that alias found. Current factions are: [iter([get(#983/fac.list`alias)],[itext(0)],|,[,%b])])])]
+
+---------Designate Subdivision v1
+
+1: faction #
+a: Division chosen to set as sub
+b: faction
+c: Number of division in list
+
+&cmd_fac-dsub #752=$+fac/divsub *:think [setq(1,[get(%#/mem_faction)])][setq(a,[edit([after([escape(%0)],\\)],\\,)])][if([match([first([get(#983/fac.%q1`leader)],|)] [first([get(#983/fac.%q1`second)],|)],%#)],[u(#983/division`sub)],[pemit(%#,Error, you must be a faction leader to add a division.)])]
+
+&division`sub #983=[if([setr(c,[match([v(fac.%q1`divisions)],[edit(%qa,%b,_)],|)])],[set(me,fac.%q1`divisions`[edit(%qa,%b,_)]:[replace([v(fac.%q1`divisions`[edit(%qa,%b,_)])],1,S,|)])][pemit(%#,[ansi(ch,Faction:)] The division [ansi(ch,%qa)] has been set as a subdivision.)],[pemit(%#,Error, there is no division by that name in the faction.)])]
+
+&cmd_afac-dsub #753=$+afac/divsub *=*:think [setq(a,[edit([after([escape(%1)],\\)],\\,)])][setq(b,[after([escape(%0)],\\)])][if([setr(1,[match([get(#983/fac.list`alias)],%qb,|)])],[u(#983/division`sub)],[pemit(%#,Error, no faction with that alias found. Current factions are: [iter([get(#983/fac.list`alias)],[itext(0)],|,[,%b])])])]
+
+
+---------Designate Subdivision v2
+
+1: faction #
+a: Division chosen to set as sub
+b: faction
+c: Number of division in list
+d: Main division
+
+&cmd_fac-dsub #752=$+fac/divsub *=*:think [setq(1,[get(%#/mem_faction)])][setq(a,[edit([after([escape(%1)],\\)],\\,)])][setq(d,[edit([after([escape(%0)],\\)],\\,)])][if([match([first([get(#983/fac.%q1`leader)],|)] [first([get(#983/fac.%q1`second)],|)],%#)],[u(#983/division`sub)],[pemit(%#,Error, you must be a faction leader to add a division.)])]
+
+&division`sub #983=[setq(9,0)][u(division`sub`check)][switch(%q9,0,[if([setr(c,[match([v(fac.%q1`divisions)],[edit(%qd,%b,_)],|)])],[set(me,fac.%q1`divisions`[edit(%qd,%b,_)]`[edit(%qa,%b,_)]:%qa)][pemit(%#,[ansi(ch,Faction:)] The division [ansi(ch,%qa)] has been created as a subdivision of [ansi(ch,%qd)].)],[pemit(%#,Error, there is no division by that name in the faction.)])])]
+
+&division`sub`check #983=[if([match([lattr(me/fac.%q1`divisions`*`*)],*`[edit(%qa,%b,_)])],[pemit(%#,Error, there is already a division by that name.)][setq(9,1)])]
+
+&cmd_afac-dsub #753=$+afac/divsub *=*=*:think [setq(d,[edit([after([escape(%1)],\\)],\\,)])][setq(a,[edit([after([escape(%2)],\\)],\\,)])][setq(b,[after([escape(%0)],\\)])][if([setr(1,[match([get(#983/fac.list`alias)],%qb,|)])],[u(#983/division`sub)],[pemit(%#,Error, no faction with that alias found. Current factions are: [iter([get(#983/fac.list`alias)],[itext(0)],|,[,%b])])])]
+
+----------Help Files
+
++addhelp Factions=-----------------------%rAstrus' Factions System%r-----------------------%r%rCreated to replace the existing Org system for a number of reasons, this new factions systems is relatively simple, which is all we really need. Factions can have both a leader and a second, both of which have the ability to change most attributes of the faction. Below are a list of commands available for the system.%r%rPublic Commands%r%r[ansi(ch,+fac/list)] - Lists our current factions along with the alias for each.%r[ansi(ch,+fac/view (<fac alias>))] - +fac/view by itself will show you information about your faction and the faction's MOTD. +fac/view <alias> will show you information about another faction including a description. To find out what faction alias are available, just type in anything for the alias and it will list them for you.%r[ansi(ch,+fac/div (<fac alias>))] - +fac/div by itself will show you a list of divisions in your faction and who is in them. +fac/div <alias> will show you the same information but from a different faction.%r%rLeadership Commands%r%r[ansi(ch,+fac/add <player>)] - Adds a player to your faction.%r[ansi(ch,+fac/rem <player>)] - Removes a player from your faction.%r[ansi(ch,+fac/motd <motd>)] - Changes the faction's Message of the Day. +fac/motd by itself will display your faction's current MOTD.%r[ansi(ch,+fac/desc <desc>)] - Changes the faction's description.%r[ansi(ch,+fac/alias <player>=<alias>)] - 'Alias' refers to a player's location in any sort of ranking structure. For the major factions, this is Rank. But other factions can have different names for the 'alias'.%r[ansi(ch,+fac/pos <player>=<position>)] - Position refers to a player's position, or assignment, in the faction.%r[ansi(ch,+fac/second <player>)] - This sets the chosen player as the second in command of the faction.%r[ansi(ch,+fac/remsec)] - This removes the current second in command.%r%r[ansi(ch,+fac/divadd <name>)] - This adds a new division to the faction.%r[ansi(ch,+fac/divdel <name>)] - This deletes a division/subdivision from the faction. Deleting a division deletes all subdivisions beneath it.%r[ansi(ch,+fac/divsub <main division>=<new subdivision>)] - This creates a new subdivision under the main division.%r[ansi(ch,+fac/assign <player>=<division>)] - This assigns the player to the specified division or subdivision. A player can be in multiple divisions.%r[ansi(ch,+fac/unassign <player>=<division)] - This removes a player from the specified division or subdivision.%r%r[ansi(ch,^)] next to a player's name in +fac/view denotes the faction's leader.%r[ansi(ch,*)] denotes the faction's second.
+
+
+
+
++addhelp/admin Factions=-----------------------%rAstrus' Factions System%r-----------------------%r%rAll Leadership Commands found in [ansi(ch,+help Factions)] have an admin counterpart:%r%r[ansi(ch,+afac/add <faction>=<player>%r+afac/rem <faction>=<player>%r+afac/desc <faction>=<desc>%r+afac/motd <faction>=<motd>%r+afac/desc <faction>=<desc>%r+afac/alias <faction>=<player>=<alias>%r+afac/pos <faction>=<player>=<position>%r+afac/second <faction>=<player>%r+afac/remsec <faction>%r%r+afac/divadd <faction>=<name>%r+afac/divdel <faction>=<name>%r+afac/divsub <faction>=<main division>=<subdivision>%r+afac/assign <faction>=<player>=<division>%r+afac/unassign <faction>=<player>=<division>)]%r%r[ansi(ch,+afac/leader <faction>=<player>)] - Admin only command, changes the leader of a faction.%r%rCreating a new faction is pretty simple:%r%r[ansi(ch,+afac/newfac <alias>=<fullname>=<short>)] - This adds a new faction with the specific alias and name. Short refers to the character that represents the faction in +who. Once this is done, all above commands can be used to customize the faction.

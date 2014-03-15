@@ -1,0 +1,124 @@
+Filename: facview
+Date: March 2014
+Programmer: Vincent Cross
+
+Purpose:
+
+One of the facions has grown so large that its current list of members is causing the buffer to break. So I'm going to have to split up +fac/view into a second command, +fac/who.
+
++fac/view will now display only the description of the faction as well as its leader and second.
+
++fac/who will display the entire roster for the faction.
+
+Public Commands(#1424)
+Public Commands Code(#1429)
+
+-- command +fac/view
+//
+The command simply displays the description of the character's current faction, or the one indicated if they include an argument. The description includes the current leader and second of the faction.
+
+In:
+	%0 - Optional. If included, displays that faction rather than the character's own.
+	
+Out:
+	A description of the faction including the leader and second.
+!//
+
+&cmd_+fac/view_noarg #1424=$+fac/view:think [u(#1429/fac`view)]
+
+&cmd_+fac/view #1424=$+fac/view *:think [u(#1429/fac`view,[secure([decompose(%0)])])]
+
+!--
+
+-- function fac`view
+//
+The functions associated with the +fac/view command. They often reference the information stored in the factions object, #983. Each faction has a number and all their data is stored in an attribute such as 'fac.1'. Each attribute has numerous sub-attributes containing the information.
+
+In:
+	%0 - Optional. If included, displays that faction rather than the character's own.
+	
+Out:
+	A description of the faction including the leader and second.
+
+Registers:
+	factoview - The number of the faction to view.
+!//
+
+&fac`view #1429=[if(%0,[if([setr(factoview,[u(fac`view`match,%0)])],[u(fac`view`display)],[u(fac`view`error)])],[setq(factoview,[get(%#/mem_faction)])][u(fac`view`display)])]
+
+&fac`view`match #1429=[match([get(#983/fac.list`alias)],%0,|)]
+
+&fac`view`error #1429=[pemit(%#,Error - No faction with that alias found. Current factions are: [iter([get(#983/fac.list`alias)],[itext(0)],|,[,%b])])]
+
+&fac`view`display #1429=[pemit(%#,[u(fac`view`display`header)]%r[u(fac`view`display`body)]%r[u(fac`view`display`footer)]
+
+&fac`view`display`header #1429=[header([extract([u(#983/fac.list`fullname)],%q<factoview>,1,|)] Faction Info)]
+
+&fac`view`display`body #1429=[align(1. 74 1.,[ansi(bh,|)],[u(#983/fac.%q<factoview>)]%r%rLeader: [ansi(ch,[name([first([get(#983/fac.%q<factoview>`leader)],|)])])][if([get(#983/fac.%q<factoview>`second)],%rSecond: [ansi(ch,[name([first([get(#983/fac.%q<factoview>`second)],|)])])])],[ansi(bh,|)])][if([match([get(%#/mem_faction)],%q<factoview>)],%r[u(fac`view`display`body`motd)])]
+
+&fac`view`display`body`motd #1429=[sep(MOTD)]%r[align(1. 74 1.,[ansi(bh,|)],[u(#983/fac.%q<factoview>`motd)],[ansi(bh,|)])]
+
+&fac`view`display`footer #1429=[sep()]
+
+!--
+
+-- command +fac/who
+//
+Display a list of the current players within the faction, including their rank, position, and when they were last online or how long they've been idle.
+
+In:
+	%0 - Optional. If included, displays that faction rather than the character's own.
+	
+Out:
+	A roster of the faction.
+!//
+
+&cmd_+fac/who_noarg #1424=$+fac/who:think [u(#1429/fac`who)]
+
+&cmd_+fac/who #1424=$+fac/who *:think [u(#1429/fac`who,[secure([decompose(%0)])])]
+
+!--
+
+-- function fac`who
+//
+The functions associated with the +fac/who command. They often reference the information stored in the factions object, #983. Each faction has a number and all their data is stored in an attribute such as 'fac.1'. Each attribute has numerous sub-attributes containing the information.
+
+In:
+	%0 - Optional. If included, displays that faction rather than the character's own.
+	
+Out:
+	A roster of the faction.
+
+Registers:
+	factoview - The number of the faction to view.
+!//
+
+&fac`who #1429=[if(%0,[if([setr(factoview,[u(fac`who`match,%0)])],[u(fac`who`display)],[u(fac`who`error)])],[setq(factoview,[get(%#/mem_faction)])][u(fac`who`display)])]
+
+&fac`who`match #1429=[u(fac`view`match,%0)]
+
+&fac`who`error #1429=[u(fac`view`error)]
+
+&fac`who`display #1429=[pemit(%#,[u(fac`who`display`header)]%r[u(fac`who`display`body)]%r[u(fac`who`display`footer)]
+
+&fac`who`display`header #1429=[header([extract([u(#983/fac.list`fullname)],%q<factoview>,1,|)] Roster)]
+
+&fac`who`display`body #1429=[align(1. 19 19 19 14 1.,[ansi(bh,|)],[u(fac`who`display`body`name)],[u(fac`who`display`body`title)],[u(fac`who`display`body`position)],[u(fac`who`display`body`online)],[ansi(bh,|)])]
+
+&fac`who`display`body`name #1429=[ansi(yh,Name)]%r%r[left(^[name([first([u(#983/fac.%q<factoview>`leader)],|)])],19)][if([words([u(#983/fac.%q<factoview>`second)])],%r[left(*[name([first([u(#983/fac.%q<factoview>`second)],|)])],19)],[null()])]%r[iter([u(#983/fac.%q<factoview>`members)],[left([name([itext(0)])],19)],|,%r)]
+
+&fac`who`display`body`title #1429=[ansi(yh,[left([u(#983/fac.%q<factoview>`alias.title)],19)])]%r%r[left([last([u(#983/fac.%q<factoview>`leader)],|)],19)][if([words([u(#983/fac.%q<factoview>`second)])],%r[left([last([u(#983/fac.%q<factoview>`second)],|)],19)],[null()])]%r[iter([u(#983/fac.%q<factoview>`alias)],[left([itext(0)],19)],|,%r)]
+
+&fac`who`display`body`position #1429=[ansi(yh,Position)]%r%r[left([extract([u(#983/fac.%q<factoview>`leader)],2,1,|)],19)][if([words([u(#983/fac.%q<factoview>`second)])],%r[left([extract([u(#983/fac.%q<factoview>`second)],2,1,|)],19)],[null()])]%r[iter([u(#983/fac.%q<factoview>`positions)],[left([itext(0)],19)],|,%r)]
+
+&fac`who`display`body`online #1429=[rjust([ansi(yh,Online)],14)]%r%r[iter([first([u(#983/fac.%q<factoview>`leader)],|)][if([words([u(#983/fac.%q<factoview>`second)])],|[first([u(#983/fac.%q<factoview>`second)],|)])]|[u(#983/fac.%q<factoview>`members)],[if([and([hasflag([itext(0)],connected)],[switch([hasflag([itext(0)],dark)],0,1,0)])],[rjust([ansi(gh,[timestring([idle([itext(0)])])])],14)],[rjust([ansi(c,[extract([get([itext(0)]/lastlogout)],2,2)])],14)])],|,%r)]
+
+&fac`who`display`footer #1429=[sep()]
+
+!--
+
+-- Helpfile
+
++addhelp Factions=This factions systems is relatively simple, which is all we really need. Factions can have both a leader and a second, both of which have the ability to change most attributes of the faction. Below are a list of commands available for the system.%r%rPublic Commands%r%r[ansi(ch,+fac/list)] - Lists our current factions along with the alias for each.%r[ansi(ch,+fac/view (<fac alias>))] - +fac/view by itself will show you information about your faction and the faction's MOTD. +fac/view <alias> will show you information about another faction including a description. To find out what faction alias are available, just type in anything for the alias and it will list them for you.%r[ansi(ch,+fac/who (<fac alias>))] - +fac/who by itself will show you the roster of your faction. +fac/who <alias> will show you the roster of another faction.%r[ansi(ch,+fac/div (<fac alias>))] - +fac/div by itself will show you a list of divisions in your faction and who is in them. +fac/div <alias> will show you the same information but from a different faction.%r%rLeadership Commands%r%r[ansi(ch,+fac/add <player>)] - Adds a player to your faction.%r[ansi(ch,+fac/rem <player>)] - Removes a player from your faction.%r[ansi(ch,+fac/motd <motd>)] - Changes the faction's Message of the Day. +fac/motd by itself will display your faction's current MOTD.%r[ansi(ch,+fac/desc <desc>)] - Changes the faction's description.%r[ansi(ch,+fac/alias <player>=<alias>)] - 'Alias' refers to a player's location in any sort of ranking structure. For the major factions, this is Rank. But other factions can have different names for the 'alias'.%r[ansi(ch,+fac/pos <player>=<position>)] - Position refers to a player's position, or assignment, in the faction.%r[ansi(ch,+fac/second <player>)] - This sets the chosen player as the second in command of the faction.%r[ansi(ch,+fac/remsec)] - This removes the current second in command.%r%r[ansi(ch,+fac/divadd <name>)] - This adds a new division to the faction.%r[ansi(ch,+fac/divdel <name>)] - This deletes a division/subdivision from the faction. Deleting a division deletes all subdivisions beneath it.%r[ansi(ch,+fac/divsub <main division>=<new subdivision>)] - This creates a new subdivision under the main division.%r[ansi(ch,+fac/assign <player>=<division>)] - This assigns the player to the specified division or subdivision. A player can be in multiple divisions.%r[ansi(ch,+fac/unassign <player>=<division)] - This removes a player from the specified division or subdivision.%r%r[ansi(ch,^)] next to a player's name in +fac/view denotes the faction's leader.%r[ansi(ch,*)] denotes the faction's second.
+
+!--
