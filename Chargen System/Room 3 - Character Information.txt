@@ -1,0 +1,459 @@
+Filename: Room 3 - Character Information
+Date: January 2014
+Programmer: Vincent Cross
+
+Purpose:
+
+The beginning of the character's actual creation. This gathers general information about the character such as fullname, what faction they're in and so on:
+
+Are you a new player/have no existing alts? (room2`new)
+
+- Character Type (room3`ctype) (Currently locked to ROC only)
+- Character Fullname (room3`fullname) (R)
+- Date of Birth (room3`dob) (R)
+- Race (room3`race) (R)    
+- Faction: UN Spacy, Anti-UN, Mercenary, Pirate, Civilian (room3`faction) (R)
+- Function (room3`function) (R)
+- Rank (room3`rank) (R)
+- Wealth (room3`wealth) (R)
+- Quote (room3`quote) (R)
+- Profile (room3`profile) (R)
+- Section status?  C - Complete, I - Incomplete, R - Revisions Required (room3`status)
+    
+Chargen Code: #1489
+Generic Room Parent: #333
+    
+-- Room Creation
+//
+This section contains the code necessary to create the room. It is expected to be performed from Room 2.
+!//
+
+@dig Chargen 3 - Character Information=Next;n;next,Back;b;back
+N
+@parent here=#333
+@set here=!no_command
+@power here=see_all
+@desc here=The first step in creating your character is to provide some general information about them. All this information will be going into the character's +finger profile. As a reminder you can use [ansi(ch,+app)] to view the current status of your app.%r%r%tBelow are the questions, commands and whatever answers you have currently added. Using any of these commands on their own (eg: Just '[ansi(ch,+quote)]') will tell you what you have written in it. Many of the questions through the app process will have character limits. So any long answers will be cut off.%r%r[u(desc`status)]%r%r[u(desc`charinfo)]
+@lock/command here=approved/0
+&approved here=[hasflag(%#,approved)]
+&command_lock`failure here=Error - You are already approved.
+!--
+
+-- Descriptions
+//
+This section handles the various displays that can appear in the description of the room.
+!//
+
+&desc`color`question #1489=wh
+&desc`color`cmd #1489=ch
+&desc`color`incomplete #1489=rh
+&desc`color`complete #1489=gh
+&desc`color`submitted #1489=gh
+&desc`color`revision #1489=yh
+
+&desc`message`alreadyapproved #1489=[ansi(yh,Already Approved.)]
+
+/// Displays the current status of this room.
+&desc`status here=[ansi([u(#1489/desc`color`question)],Current Status:%b)][if([hasflag(%#,approved)],[u(#1489/desc`message`alreadyapproved)],[switch([u(#1489/getStatus)],NS,[u(desc`status`editable)],S,[ansi([u(#1489/desc`color`submitted)],App Submitted)],R,[u(desc`status`editable)])])]
+
+&desc`status`editable here=[switch([u(#1489/getRoom3Status)],I,[ansi([u(#1489/desc`color`incomplete)],Incomplete)],C,[ansi([u(#1489/desc`color`complete)],Complete)],R,[ansi(yh,Revisions Required)])]
+
+/// Main questions display.
+
+&dblist here=ctype fullname dob race faction function rank wealth quote profile
+
+&desc`charinfo here=[iter([u(dblist)],[u(desc`charinfo`template`main,[itext(0)])],%b,%r%r)]
+
+/// Questions template. Takes one argument, the attribute name for the question being accessed. Eg: fullname
+
+&desc`charinfo`template`main here=[u(desc`charinfo`%0`message)][u(desc`charinfo`%0`command)][u(desc`charinfo`template`display,%0)]
+
+&desc`charinfo`template`display here=[if([hasflag(%#,approved)],%r[u(#1489/desc`message`alreadyapproved)],[if([u(#1489/hasRoom3%0)],[switch([first([u(#1489/getRoom3%0)],|)],R,[u(#1489/message`revise)])]%r[rest([u(#1489/getRoom3%0)],|)])])]
+
+/// Type of character display.
+&desc`charinfo`ctype`message here=[ansi([u(#1489/desc`color`question)],For the moment, only ROCs can be applied through this chargen.)]
+
+/// Fullname of the character.
+&desc`charinfo`fullname`command here=%r([ansi([u(#1489/desc`color`cmd)],+fullname <fullname>)])
+
+&desc`charinfo`fullname`message here=[ansi([u(#1489/desc`color`question)],What is the full name of your character?)]
+
+/// Date of birth of the character.
+&desc`charinfo`dob`command here=%r([ansi([u(#1489/desc`color`cmd)],+dob <date of birth)])
+
+&desc`charinfo`dob`message here=[ansi([u(#1489/desc`color`question)],When was your character born? \([add(41,[timefmt($Y)])] - Age to get character's birth year\))]
+
+/// Race of the character... Human, Zentran/Meltran, Zolan, some hybrid of two of the three?
+&desc`charinfo`race`command here=%r([ansi([u(#1489/desc`color`cmd)],+race <race>)])
+
+&desc`charinfo`race`message here=[ansi([u(#1489/desc`color`question)],Your character's race? \(Human, Zentran/Meltran, Zolan or combination?\))]
+
+/// Faction that the character is in? (AUN, Merc, Civvy, UN, Pir)
+&desc`charinfo`faction`command here=%r([ansi([u(#1489/desc`color`cmd)],+faction <faction>)])
+
+&desc`charinfo`faction`message here=[ansi([u(#1489/desc`color`question)],Your character's faction? \(AUN, Merc, Civvy, UN, Pir?\))]
+
+/// Function of the character.
+&desc`charinfo`function`command here=%r([ansi([u(#1489/desc`color`cmd)],+function <function>)])
+
+&desc`charinfo`function`message here=[ansi([u(#1489/desc`color`question)],What does your character do? Pilot, Ship Captain, Doctor, Baker?)]
+
+/// Rank of the character in their faction.
+&desc`charinfo`rank`command here=%r([ansi([u(#1489/desc`color`cmd)],+rank <rank>)])
+
+&desc`charinfo`rank`message here=[ansi([u(#1489/desc`color`question)],What is your character's rank in their faction?)]
+
+/// Wealth of the character.
+&desc`charinfo`wealth`command here=%r([ansi([u(#1489/desc`color`cmd)],+wealth <wealth # and justification>)])
+
+&desc`charinfo`wealth`message here=[ansi([u(#1489/desc`color`question)],[align(72,What wealth rating would you like your character to have as explained in Economy? Anything over 5 will need a decent amount of justification.)])]
+
+/// Quote that the character might say.
+&desc`charinfo`quote`command here=%r([ansi([u(#1489/desc`color`cmd)],+quote <quote>)])
+
+&desc`charinfo`quote`message here=[ansi([u(#1489/desc`color`question)],What is something your character might say[,] a tag-line to sum them up?)]
+
+/// Profile of the character's personality and history.
+&desc`charinfo`profile`command here=%r([ansi([u(#1489/desc`color`cmd)],+profile <profile>)])
+
+&desc`charinfo`profile`message here=[ansi([u(#1489/desc`color`question)],[align(72,Your character's profile should be about a paragraph about their personality and history.)])]
+
+!--
+
+-- command +fullname
+//
+This command allows the player to enter the full name of their character. It takes the character name as an argument.
+
+In:
+	%0 - The full name of their character.
+	
+Out:
+	room3`fullname - The DB attribute containing their answer.
+!//
+
+&cmd_+fullname here=$+fullname *:think [u(#1489/room3`fullname,[left([secure([decompose(%0)])],[u(#1489/limit`3`fullname)])],[u(#1489/limit`3`fullname)])];think [u(checkstatus)]
+
+&limit`3`fullname #1489=50
+
+&cmd_+fullname-noarg here=$+dob:think [if([u(#1489/hasRoom3Fullname)],[pemit(%#,[u(#1489/getRoom3Fullname)])],[pemit(%#,Nothing entered yet.)])]
+
+!--
+
+-- function fullname
+//
+The main code to run the +fullname command.
+
+In:
+	%0 - The fullname of their character.
+	
+Out:
+	room3`fullname - The DB attribute containing their answer.
+!//
+
+&room3`fullname #1489=[u(setRoom3Fullname,C|%0)][u(message`3`fullname)]
+
+&message`3`fullname #1489=[pemit(%#,Your character's fullname is '[rest([u(getRoom3Fullname)],|)]')]
+
+!--
+
+-- command +dob
+//
+This command allows the player to enter the date of birth of their character. This is based upon the current IC year which is 41 years ahead of our own.
+
+In:
+	%0 - The date of birth of their character.
+	
+Out:
+	room3`dob - The DB attribute containing their answer.
+!//
+
+&cmd_+dob here=$+dob *:think [u(#1489/room3`dob,[left(%0,[u(#1489/limit`3`dob)])])];think [u(checkstatus)]
+
+&limit`3`dob #1489=40
+
+&cmd_+dob-noarg here=$+dob:think [if([u(#1489/hasRoom3DOB)],[pemit(%#,[u(#1489/getRoom3Fullname)])],[pemit(%#,Nothing entered yet.)])]
+
+!--
+
+-- function dob
+//
+The main code to run the +dob command.
+
+In:
+	%0 - The date of birth of their character.
+	
+Out:
+	room3`dob - The DB attribute containing their answer.
+!//
+
+&room3`dob #1489=[u(setRoom3DOB,C|%0)][u(message`3`dob)]
+
+&message`3`dob #1489=[pemit(%#,Your character's date of birth is '[rest([u(getRoom3DOB)],|)]')]
+
+!--
+
+-- command +race
+//
+This command allows the player to enter the race of their character. They have a choice between Human, Zentran/Meltran, Zolan or a combination of them.
+
+In:
+	%0 - The race of the character.
+	
+Out:
+	room3`race - The DB attribute containing their answer.
+!//
+
+&cmd_+race here=$+race *:think [u(#1489/room3`race,[left(%0,[u(#1489/limit`3`race)])])];think [u(checkstatus)]
+
+&limit`3`race #1489=50
+
+&cmd_+race-noarg here=$+race:think [if([u(#1489/hasRoom3Race)],[pemit(%#,[u(#1489/getRoom3Race)])],[pemit(%#,Nothing entered yet.)])]
+
+!--
+
+-- function race
+//
+The main code to run the +race command.
+
+In:
+	%0 - The race of the character.
+	
+Out:
+	room3`race - The DB attribute containing their answer.
+!//
+
+&room3`race #1489=[u(setRoom3Race,C|%0)][u(message`3`race)]
+
+&message`3`race #1489=[pemit(%#,Your character's race is: [rest([u(getRoom3Race)],|)])]
+
+!--
+
+-- command +faction
+//
+This command allows the player to enter the faction of their character. They have a choice between AUN, Merc, Civvy, UN, Pir.
+
+In:
+	%0 - The faction of the character.
+	
+Out:
+	room3`faction - The DB attribute containing their answer.
+!//
+
+&cmd_+faction here=$+faction *:think [u(#1489/room3`faction,[left([secure([decompose(%0)])],[u(#1489/limit`3`faction)])])];think [u(checkstatus)]
+
+&limit`3`faction #1489=5
+
+&cmd_+faction-noarg here=$+faction:think [if([u(#1489/hasRoom3Faction)],[pemit(%#,[u(#1489/getRoom3Faction)])],[pemit(%#,Nothing entered yet.)])]
+
+!--
+
+-- function faction
+//
+The main code to run the +faction command.
+
+In:
+	%0 - The faction of the character.
+	
+Out:
+	room3`faction - The DB attribute containing their answer.
+!//
+
+&room3`faction #1489=[if([match(AUN Merc Civvy UN Pir,%0)],[u(setRoom3Faction,C|%0)][u(message`3`faction)],[u(message`3`faction`error)])]
+
+&message`3`faction #1489=[pemit(%#,Your character's faction is: [rest([u(getRoom3Faction)],|)])]
+
+&message`3`faction`error #1489=[pemit(%#,Error - Invalid faction selection. Please choose between [ansi(ch,AUN)], [ansi(ch,Merc)], [ansi(ch,Civvy)], [ansi(ch,UN)] or [ansi(ch,Pir)].
+
+!--
+
+-- command +function
+//
+This command allows the player to enter the function of their character. Essentially a few word descriptor of what they do.
+
+In:
+	%0 - The function of the character.
+	
+Out:
+	room3`function - The DB attribute containing their answer.
+!//
+
+&cmd_+function here=$+function *:think [u(#1489/room3`function,[left(%0,[u(#1489/limit`3`function)])])];think [u(checkstatus)]
+
+&limit`3`function #1489=40
+
+&cmd_+function-noarg here=$+function:think [if([u(#1489/hasRoom3Function)],[pemit(%#,[u(#1489/getRoom3Function)])],[pemit(%#,Nothing entered yet.)])]
+
+!--
+
+-- function function
+//
+The main code to run the +function command.
+
+In:
+	%0 - The function of the character.
+	
+Out:
+	room3`function - The DB attribute containing their answer.
+!//
+
+&room3`function #1489=[u(setRoom3Function,C|%0)][u(message`3`function)]
+
+&message`3`function #1489=[pemit(%#,Your character's function is: [rest([u(getRoom3Function)],|)])]
+
+!--
+
+-- command +rank
+//
+This command allows the player to enter the rank of their character in their faction. That's if they have one.
+
+In:
+	%0 - The rank of the character.
+	
+Out:
+	room3`rank - The DB attribute containing their answer.
+!//
+
+&cmd_+rank here=$+rank *:think [u(#1489/room3`rank,[left(%0,[u(#1489/limit`3`rank)])])];think [u(checkstatus)]
+
+&limit`3`rank #1489=100
+
+&cmd_+rank-noarg here=$+rank:think [if([u(#1489/hasRoom3Rank)],[pemit(%#,[u(#1489/getRoom3Rank)])],[pemit(%#,Nothing entered yet.)])]
+
+!--
+
+-- function rank
+//
+The main code to run the +rank command.
+
+In:
+	%0 - The rank of the character.
+	
+Out:
+	room3`rank - The DB attribute containing their answer.
+!//
+
+&room3`rank #1489=[u(setRoom3Rank,C|%0)][u(message`3`rank)]
+
+&message`3`rank #1489=[pemit(%#,You have asked for a rank of: [rest([u(getRoom3Rank)],|)])]
+
+!--
+
+-- command +wealth
+//
+This command allows the player to enter the wealth of their character. This will typically require some justification so will be a large field.
+
+In:
+	%0 - The wealth of the character.
+	
+Out:
+	room3`wealth - The DB attribute containing their answer.
+!//
+
+&cmd_+wealth here=$+wealth *:think [u(#1489/room3`wealth,[left(%0,[u(#1489/limit`3`wealth)])])];think [u(checkstatus)]
+
+&limit`3`wealth #1489=1000
+
+&cmd_+wealth-noarg here=$+wealth:think [if([u(#1489/hasRoom3Wealth)],[pemit(%#,[u(#1489/getRoom3Wealth)])],[pemit(%#,Nothing entered yet.)])]
+
+!--
+
+-- function wealth
+//
+The main code to run the +wealth command.
+
+In:
+	%0 - The wealth of the character.
+	
+Out:
+	room3`wealth - The DB attribute containing their answer.
+!//
+
+&room3`wealth #1489=[u(setRoom3Wealth,C|%0)][u(message`3`wealth)]
+
+&message`3`wealth #1489=[pemit(%#,You have asked for a wealth of: [rest([u(getRoom3Wealth)],|)])]
+
+!--
+
+-- command +quote
+//
+This command allows the player to enter the quote of their character. This is one to a few sentences that might be something the character says that sums them up quickly.
+
+In:
+	%0 - The quote of the character.
+	
+Out:
+	room3`quote - The DB attribute containing their answer.
+!//
+
+&cmd_+quote here=$+quote *:think [u(#1489/room3`quote,[left(%0,[u(#1489/limit`3`quote)])])];think [u(checkstatus)]
+
+&limit`3`quote #1489=500
+
+&cmd_+quote-noarg here=$+quote:think [if([u(#1489/hasRoom3Quote)],[pemit(%#,[u(#1489/getRoom3Quote)])],[pemit(%#,Nothing entered yet.)])]
+
+!--
+
+-- function quote
+//
+The main code to run the +quote command.
+
+In:
+	%0 - The quote of the character.
+	
+Out:
+	room3`quote - The DB attribute containing their answer.
+!//
+
+&room3`quote #1489=[u(setRoom3Quote,C|%0)][u(message`3`quote)]
+
+&message`3`quote #1489=[pemit(%#,Your character might say something like '[rest([u(getRoom3Quote)],|)]')]
+
+!--
+
+-- command +profile
+//
+This command allows the player to enter the profile of their character. This is usually a single paragraph that briefly outlines their history and personality.
+
+In:
+	%0 - The profile of the character.
+	
+Out:
+	room3`profile - The DB attribute containing their answer.
+!//
+
+&cmd_+profile here=$+profile *:think [u(#1489/room3`profile,[left(%0,[u(#1489/limit`3`profile)])])];think [u(checkstatus)]
+
+&limit`3`profile #1489=1000
+
+&cmd_+profile-noarg here=$+profile:think [if([u(#1489/hasRoom3Profile)],[pemit(%#,[u(#1489/getRoom3Profile)])],[pemit(%#,Nothing entered yet.)])]
+
+!--
+
+-- function profile
+//
+The main code to run the +profile command.
+
+In:
+	%0 - The profile of the character.
+	
+Out:
+	room3`profile - The DB attribute containing their answer.
+!//
+
+&room3`profile #1489=[u(setRoom3Profile,C|%0)][u(message`3`profile)]
+
+&message`3`profile #1489=[pemit(%#,Your character's profile is: [rest([u(getRoom3Profile)],|)])]
+
+!--
+
+
+-- function checkstatus
+//
+The code in this function involves checking the status of this room to see if it can be considered complete or not. This information is stored in room2`status as C - Complete, I - Incomplete or R - Revisions Required.
+
+Out:
+	room2`status - Changes this between C/I/R depending upon the status of the questions.
+!//
+
+&checkstatus here=[setq(complete,1)][iter([u(dblist)],[switch([first([get([u(#1489/getapp)]/room3`[itext(0)])],|)],R,[u(#1489/setRoom3Status,R)][setq(complete,0)][ibreak()],C,,[u(#1489/setRoom3Status,I)][setq(complete,0)][ibreak()])])][if(%q<complete>,[switch([u(#1489/getRoom3Status)],C,,[pemit(%#,[u(#1489/message`sectioncomplete)])])][u(#1489/setRoom3Status,C)])]
+!--

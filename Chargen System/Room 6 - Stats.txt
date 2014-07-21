@@ -1,0 +1,151 @@
+Filename: Room 6 - Stats
+Date: June 2014
+Programmer: Vincent Cross
+
+Purpose:
+
+This room helps the player set up the fixed stats for their character. These stats are Strength (STR), Dexterity (DEX), Endurance (END), Intelligence (INT), Spirit (SPI), Luck (LCK).
+
+As rookie OCs the following limitations are placed on their stats:
+
+-Humans can only have 1 stat at 5 and the rest must be 4 or lower.
+-Pure Zentradi can have their Str, End or Int to 6, but the rest must be at 4 or less except for one which must be at 3.
+-Zolan may do the same as Zentradi, but only with Spi.
+-Luck is determined randomly (roll 3d10 then take the average, round normally)
+
+For security reasons, the stats won't actually be placed on the character themselves. Instead they'll be stored inside the database like the other application info until approved.
+
+- Strength. (room6`str)
+- Dexterity. (room6`dex)
+- Endurance. (room6`end)
+- Intelligence. (room6`int)
+- Spirit. (room6`spi)
+- Luck. (room6`lck)
+    
+- Section status?  C - Complete, I - Incomplete, R - Revisions Required (room6`status)
+    
+Chargen Code: #1489
+Generic Room Parent: #333
+
+-- Room Creation
+//
+This section contains the code necessary to create the room. It is expected to be performed from Room 5.
+!//
+
+@dig Chargen 6 - Stats=Next;n;next,Back;b;back
+N
+@parent here=#333
+@set here=!no_command
+@power here=see_all
+@desc here=Now we get to all the mechanical bits of making a character! First, it's time to figure out what their stats are. Every character has six stats: Strength, Dexterity, Endurance, Intelligence, Spirit and Luck. Luck is determined randomly (and already has been), the rest are assigned by you! The only limitations are based upon your race:%r%r[align(70,[ansi([u(#1489/desc`color`highlight)],Humans)]: They may have one stat maxed at 5%, but the rest must be 4 or lower.%r[ansi([u(#1489/desc`color`highlight)],Zentradi)]: They may have their Strength%, Endurance or Intelligence maxed at 6%, but the rest must be 4 or lower except for one which must be 3 or lower.%r[ansi([u(#1489/desc`color`highlight)],Zolans)]: They may have their Spirit at 6%, but the rest must be 4 or lower except for one which must be 3 or lower.%r[ansi([u(#1489/desc`color`highlight)],Hybrids)]: They are a mix of two of the above. Eg Zent/Human would basically follow Zent rules. Human/Zolan%, Zolan rules.)]%r%rThe following commands can be used:%r'[ansi([u(#1489/desc`color`cmd)],+stat <Str/Dex/End/Int/Spi>=<#>)]' - Set your requested stat.%r'[ansi([u(#1489/desc`color`cmd)],+stat <Str/Dex/End/Int/Spi>)]' - Show the current value of the stat.%r%r[u(desc`status)]%r%r[u(desc`stats)]
+@lock/command here=approved/0
+&approved here=[hasflag(%#,approved)]
+&command_lock`failure here=Error - You are already approved.
+&desc`color`highlight #1489=wh
+!--
+
+-- Descriptions
+//
+This section handles the description of the room and what is displayed about the current app's status.
+!//
+
+&desc`color`question #1489=wh
+&desc`color`cmd #1489=ch
+&desc`color`incomplete #1489=rh
+&desc`color`complete #1489=gh
+&desc`color`submitted #1489=gh
+&desc`color`revision #1489=yh
+
+&desc`message`alreadyapproved #1489=[ansi(yh,Already Approved.)]
+
+/// Displays the current status of this room.
+&desc`status here=[ansi([u(#1489/desc`color`question)],Current Status:%b)][if([hasflag(%#,approved)],[u(#1489/desc`message`alreadyapproved)],[switch([u(#1489/getStatus)],NS,[u(desc`status`editable)],S,[ansi([u(#1489/desc`color`submitted)],App Submitted)],R,[u(desc`status`editable)])])]
+
+&desc`status`editable here=[switch([u(#1489/getRoom6Status)],I,[ansi([u(#1489/desc`color`incomplete)],Incomplete)],C,[ansi([u(#1489/desc`color`complete)],Complete)],R,[ansi(yh,Revisions Required)])]
+
+/// Displays the history sections.
+
+&desc`stats here=[if([not([hasflag(%#,approved)])],[iter(str dex end int spi lck,[u(desc`stats`section,[itext(0)])],,%r)])]
+
+/// Displays each individual section. %0 is the stat abbreviation
+
+&desc`stats`section here=[ansi([u(#1489/desc`color`question)],[switch(%0,str,Strength,dex,Dexterity,end,Endurance,int,Intelligence,spi,Spirit,lck,Luck)])]: [if([u(#1489/hasRoom6Stat,%0)],[u(#1489/getRoom6Stat,%0)],None)]
+
+!--
+
+-- function runluck
+//
+This function is run at the creation of the char object in Room 1. It's placed here in Room 6 for relevance. It rolls three 10 sided dice, averages them out and then follows standard rounding rules to determine the luck the character gets. It then sets this in their app.
+
+Out:
+	A random int value representing the character's luck.
+!//
+
+&room6`runluck #1489=[setq(total,0)][null([iter([lnum([u(room6`runluck`dicenum)])],[setq(total,[add([die(1,[u(room6`runluck`dicefaces)])],%q<total>)])])])][round([fdiv(%q<total>,[u(room6`runluck`dicenum)])],0)][unsetq(total)]
+
+&room6`runluck`dicenum #1489=3
+&room6`runluck`dicefaces #1489=10
+
+!--
+
+-- command +stat
+//
+This command records the player's requested for their character. The single argument version simply shows the current value of the requested stat.
+
+In:
+	%0 - The stat to edit/view.
+	%1 - The number that they want the stat at
+	
+Out:
+	room6`<str/dex/end/int/spi/lck> - The attribute to set/view.
+!//
+
+&cmd_+stat here=$+stat *=?:think [u(#1489/room6`stat,%0,%1)];think [u(checkstatus)]
+
+&cmd_+stat-view here=$^\+stat (str|dex|end|int|spi|lck)$:think [if([match(str dex end int spi lck,%1)],[if([u(#1489/hasRoom6Stat,%1)],[pemit(%#,[u(#1489/getRoom6Stat,%1)])],[pemit(%#,Nothing entered yet.)])],[u(#1489/message`6`wrongstatview)])]
+@set here/cmd_+stat-view=regexp
+
+&message`6`wrongstatview #1489=[pemit(%#,Error - That is not a valid stat to view. Please use one of the following: [ansi([u(desc`color`highlight)],Str Dex End Int Spi Lck)])]
+
+!--
+
+-- function stat
+//
+The main code to run the +stat command.
+
+In:
+	%0 - The stat to edit/view.
+	%1 - The number that they want the stat at
+	
+Out:
+	room6`<str/dex/end/int/spi/lck> - The attribute to set/view.
+!//
+
+&room6`stat #1489=[if([match(str dex end int spi,%0)],[u(#1489/room6`stat`continue,%0,%1)],[u(message`6`wrongstat)])]
+
+&room6`stat`continue #1489=[if([cand([gte(%1,[u(room6`stat`minstat)])],[lte(%1,[u(room6`stat`maxstat)])])],[u(#1489/room6`stat`finish,%0,%1)],[u(message`6`invalidnum)])])]
+
+&room6`stat`minstat #1489=1
+&room6`stat`maxstat #1489=6
+
+&room6`stat`finish #1489=[u(setRoom6Stat,%0,%1)][u(message`6`finished,%0,%1)]
+
+&message`6`wrongstat #1489=[pemit(%#,Error - That is not a valid stat to set. Please use one of the following: [ansi([u(desc`color`highlight)],Str Dex End Int Spi)])]
+
+&message`6`invalidnum #1489=[pemit(%#,Error - That is not a valid number. Please use [u(room6`stat`minstat)] through [u(room6`stat`maxstat)].)]
+
+&message`6`finished #1489=[pemit(%#,You set your [switch(%0,str,Strength,dex,Dexterity,end,Endurance,int,Intelligence,spi,Spirit)] to %1.)]
+
+!--
+
+-- function checkstatus
+//
+The code in this function involves checking the status of this room to see if it can be considered complete or not. This information is stored in room6`status as C - Complete, I - Incomplete or R - Revisions Required.
+
+Out:
+	room6`status - Changes this between C/I/R depending upon the status of the questions.
+!//
+
+&checkstatus here=[if([cand([u(#1489/hasRoom6Stat,str)],[u(#1489/hasRoom6Stat,dex)],[u(#1489/hasRoom6Stat,end)],[u(#1489/hasRoom6Stat,int)],[u(#1489/hasRoom6Stat,spi)])],[switch([u(#1489/getRoom6Status)],C,,[u(#1489/setRoom6Status,C)][pemit(%#,[u(#1489/message`sectioncomplete)])])],[u(#1489/setRoom6Status,I)])]
+
+!--

@@ -1,0 +1,44 @@
+Filename: +pot
+Date: April 2014
+Programmer: Vincent Cross
+
+Purpose:
+
+The +pot is a system that records the poses that players have made in a scene. This file outlines changes I have recently made to it.
+
+The +pot has a technical limitation in the amount of information it can record. To that end, I'm upgrading it with an auto-clean information (I had originally thought the cleaning process done in +pot would be enough, obviously it wasn't!). Additionally I'm altering the interface slightly to give admin an idea of the database's current capacity.
+
+-- function pot`autoclean
+//
+This small function works essentially like pot`clean, however it is run by the MUSH's CRON on a daily basis and cleans up the entire database.
+!//
+
+&pot`autoclean #1411=[u(pot`autoclean`1)][u(pot`autoclean`2)]
+
+&pot`autoclean`1 #1411=[null([iter([lattr(#1411/pot`db`*`*)],[if([u(func`under2hours,[elements([get(#1411/[itext(0)])],2,|)])],,[attrib_set(#1411/[itext(0)])])])])]
+
+&pot`autoclean`2 #1411=[null([iter([lattr(#1411/pot`lastdb`*`*)],[if([u(func`under2hours,[get(#1411/[itext(0)])])],,[attrib_set(#1411/[itext(0)])])])])]
+
+!--
+
+-- cron potautoclean
+//
+This is the CRON job to run the autoclean function every day at 1:01am each day.
+!//
+
+&cron_job_potautoclean #740=@trigger #1411/pot`autoclean
+
+&cron_time_potautoclean #740=|||01|01|
+
+
+!--
+
+-- command +pot
+//
+The main purpose of the system, to display the last recorded poses. It's separated into multiple pemits because a single pemit would be unlikely to have enough buffer room to handle all the poses it contains, particularly if they are large poses. It's an ugly setup, but is an unfortunate technical limitation of the PennMUSH platform.
+!//
+
+&cmd_+pot #838=$+pot:think [setq(targetroom,[u(#1411/func`room,%l)])][u(#1411/pot`command)];think [if([gte(%q<potcount>,1)],[pemit(%#,[u(#1411/pot`repeat)])])];think [if([gte(%q<potcount>,2)],[pemit(%#,[u(#1411/pot`repeat)])])];think [if([gte(%q<potcount>,3)],[pemit(%#,[u(#1411/pot`repeat)])])];think [if([gte(%q<potcount>,4)],[pemit(%#,[u(#1411/pot`repeat)])])];think [if([gte(%q<potcount>,5)],[pemit(%#,[u(#1411/pot`repeat)])])];think [if([gte(%q<potcount>,6)],[pemit(%#,[u(#1411/pot`repeat)])])];think [if([gte(%q<potcount>,7)],[pemit(%#,[u(#1411/pot`repeat)])])];think [if([gte(%q<potcount>,8)],[pemit(%#,[u(#1411/pot`repeat)])])];think [if([gte(%q<potcount>,9)],[pemit(%#,[u(#1411/pot`repeat)])])];think [if([gte(%q<potcount>,10)],[pemit(%#,[u(#1411/pot`repeat)])])];think [if([orflags(%#,Wr)],[pemit(%#,[sep(< DB Capacity: [round([mul([fdiv([add([nattr(#1411/pot`db`*`*)],[nattr(#1411/pot`lastdb`*`*)])],1500)],100)],0)]%% >)])],[pemit(%#,[sep()])])]
+
+
+!--

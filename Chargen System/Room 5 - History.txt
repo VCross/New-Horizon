@@ -1,0 +1,154 @@
+Filename: Room 5 - History
+Date: June 2014
+Programmer: Vincent Cross
+
+Purpose:
+
+This room handles the entry of the character's history, or background. As these can get long, a paging system will be necessary to record all of said history as it may exceed the attribute storage limits. There is only the one question.
+
+- Explain your character's history to us. What got them started doing what they're doing, why did they come out to the butt-end of nowhere to join the Horizon Fleet. OCs largely have free reign so long as they stick within Macross canon. (room5`history`#)
+    
+- Section status?  C - Complete, I - Incomplete, R - Revisions Required (room5`status)
+    
+Chargen Code: #1489
+Generic Room Parent: #333
+
+-- Room Creation
+//
+This section contains the code necessary to create the room. It is expected to be performed from Room 4.
+!//
+
+@dig Chargen 5 - History=Next;n;next,Back;b;back
+N
+@parent here=#333
+@set here=!no_command
+@power here=see_all
+@desc here=The next step on a character's journey is their history. Explain your character's history to us. What got them started doing what they're doing, why did they come out to the butt-end of nowhere to join the Horizon Fleet. OCs largely have free reign so long as they stick within Macross canon.%r%rAs histories can get rather long, this room uses a paging system. You can split your history up and place it into multiple pages if necessary. This is done using the '[ansi([u(#1489/desc`color`cmd)],+history <#>=<text>)]' command, where <#> is the page number you wish to edit. Below you will see a list of pages containing your history along with a few words from the beginning and end of each section, as well as how full that page is. You can view any page using '[ansi([u(#1489/desc`color`cmd)],+history <#>)]'. A page can be cleared using '[ansi([u(#1489/desc`color`cmd)],+history/clear <#>)]'.%r%rYou cannot set a page unless the previous one exists. For example, you cannot set page 5 without having page 4 already set. Also, in order for this section to be complete, you must have atleast a page 1.%r%rIt would be a good idea to use a text editor such as Notepad while working on this!%r%r[u(desc`status)]%r%r[u(desc`history)]
+@lock/command here=approved/0
+&approved here=[hasflag(%#,approved)]
+&command_lock`failure here=Error - You are already approved.
+!--
+
+-- Descriptions
+//
+This section handles the description of the room and what is displayed about the current app's status.
+!//
+
+&desc`color`question #1489=wh
+&desc`color`cmd #1489=ch
+&desc`color`incomplete #1489=rh
+&desc`color`complete #1489=gh
+&desc`color`submitted #1489=gh
+&desc`color`revision #1489=yh
+
+&desc`message`alreadyapproved #1489=[ansi(yh,Already Approved.)]
+
+/// Displays the current status of this room.
+&desc`status here=[ansi([u(#1489/desc`color`question)],Current Status:%b)][if([hasflag(%#,approved)],[u(#1489/desc`message`alreadyapproved)],[switch([u(#1489/getStatus)],NS,[u(desc`status`editable)],S,[ansi([u(#1489/desc`color`submitted)],App Submitted)],R,[u(desc`status`editable)])])]
+
+&desc`status`editable here=[switch([u(#1489/getRoom5Status)],I,[ansi([u(#1489/desc`color`incomplete)],Incomplete)],C,[ansi([u(#1489/desc`color`complete)],Complete)],R,[ansi(yh,Revisions Required)])]
+
+/// Displays the history sections.
+
+&desc`history here=[if([not([hasflag(%#,approved)])],[iter([sort([lattr([u(#1489/getapp)]/room5`history`*)])],[u(desc`history`section,[last([itext(0)],`)])],,%r%r)])]
+
+/// Displays each individual section. %0 is the page number
+
+&desc`history`section here=[ansi([u(#1489/desc`color`question)],Page %0 ([u(desc`history`section`size,%0)]%%):)]%r[left([u(#1489/getRoom5History,%0)],25)] ... [right([u(#1489/getRoom5History,%0)],25)]
+
+/// Returns the current amount of text in the page, ie how full it is. %0 is the page number.
+
+&desc`history`section`size here=[round([mul([fdiv([strlen([u(#1489/getRoom5History,%0)])],[u(#1489/room5`pagesizelimit)])],100)],0)]
+
+!--
+
+-- command +history
+//
+This command records the player's history for their character to the specified page. The single argument version simply shows what they have in an existing page.
+
+In:
+	%0 - The page number to edit/view.
+	%1 - The history info to set on the specified page.
+	
+Out:
+	room5`history`# - The DB attribute containing the history pages.
+!//
+
+&cmd_+history here=$+history ?=*:think [u(#1489/room5`history,%0,%1)];think [u(checkstatus)]
+
+&cmd_+history-view here=$+history ?:think [if([u(#1489/hasRoom5History,%0)],[pemit(%#,[u(#1489/getRoom5History,%0)])],[pemit(%#,Nothing entered yet.)])]
+
+!--
+
+-- function history
+//
+The main code to run the +history command.
+
+In:
+	%0 - The page number to edit/view.
+	%1 - The history info to set on the specified page.
+	
+Out:
+	room5`history`# - The DB attribute containing the history pages.
+!//
+
+&room5`history #1489=[switch(%0,1,[if([lt([setr(length,[strlen(%1)])],[u(room5`pagesizelimit)])],[u(setRoom5History,%0,%1)][u(message`5`history,%0)],[u(message`5`toolong,%q<length>)])],[u(room5`history`continue,%0,%1)])]
+
+&room5`history`continue #1489=[if([cand([isnum(%0)],[gt(%0,0)],[u(hasRoom5History,[sub(%0,1)])])],[if([lt([strlen(%1)],[u(room5`pagesizelimit)])],[u(setRoom5History,%0,%1)][u(message`5`history,%0)],[u(message`5`toolong)])],[u(message`5`wrongpage)])]
+
+/// Max amount of characters per page.
+&room5`pagesizelimit #1489=4000
+
+&message`5`history #1489=[pemit(%#,You have set your history for page %0.)]
+
+&message`5`toolong #1489=[pemit(%#,Error - That text is too large ([switch(%0,4084,Buffer Breaker,%0)]) to fit within a page, please shorten it to a little under 4000.)]
+
+&message`5`wrongpage #1489=[pemit(%#,Error - Invalid page number. Make sure the page is 1 - 9 and that the previous page exists. (eg. you cannot have a page 5 without a 4))]
+
+!--
+
+-- command +history/clear
+//
+Clears the specified page of all history.
+
+In:
+	%0 - The page number to clear.
+	
+Out:
+	Clears the specified page of any history.
+!//
+
+&cmd_+history-clear here=$+history/clear ?:think [u(#1489/room5`history-clear,%0)];think [u(checkstatus)]
+
+!--
+
+-- function history-clear
+//
+The main code to run the +history/clear command.
+
+In:
+	%0 - The page number to clear.
+	
+Out:
+	Clears the specified page of any history.
+!//
+
+&room5`history-clear #1489=[if([u(hasRoom5History,%0)],[attrib_set([u(getapp)]/room5`history`%0)][u(#1489/message`5`clear,%0)],[u(#1489/message`5`nopage)])]
+
+&message`5`clear #1489=[pemit(%#,You have cleared page %0 of your history.)]
+
+&message`5`nopage #1489=[pemit(%#,Error - That page does not currently exist.)]
+
+!--
+
+-- function checkstatus
+//
+The code in this function involves checking the status of this room to see if it can be considered complete or not. This information is stored in room5`status as C - Complete, I - Incomplete or R - Revisions Required.
+
+Out:
+	room5`status - Changes this between C/I/R depending upon the status of the questions.
+!//
+
+&checkstatus here=[if([u(#1489/hasRoom5History,1)],[switch([u(#1489/getRoom5Status)],C,,[u(#1489/setRoom5Status,C)][pemit(%#,[u(#1489/message`sectioncomplete)])])],[u(#1489/setRoom5Status,I)])]
+
+!--

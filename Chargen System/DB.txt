@@ -8,21 +8,50 @@ A master list of attributes that make up the new Chargen database.
 
 -- Basic
 
-db`# - Contacts the date the application was last active.
-db`#`status - The overall status of the application. NS: Not submitted, S: Submitted, R: Returned, A: Approved
+#1489/db`%# - Contains the dbref of the relevant app object and the date the application was last active.
+status - The overall status of the application. NS: Not submitted, S: Submitted, R: Returned, A: Approved
 
 !--
 
 -- Room 2 - Personal Information
 
-db`#`2`status - The status for the individual section. C: Complete, I: Incomplete, R: Revisions Required
-db`#`2`new - 0/1: Whether they're a new player to the MUSH or not.
-db`#`2`alts - A list of current alts.
-db`#`2`email - An email address.
-db`#`2`name - The player's name or well known alias.
-db`#`2`age - The player's age.
-db`#`2`rped - A description of previous RP experience.
-db`#`2`consent - A description of consent-based role-playing.
-db`#`2`source - Where the player heard about New Horizon.
+room2`status - The status for the individual section. C: Complete, I: Incomplete, R: Revisions Required
+room2`new - 0/1: Whether they're a new player to the MUSH or not.
+room2`alts - A list of current alts.
+room2`email - An email address.
+room2`name - The player's name or well known alias.
+room2`age - The player's age.
+room2`rped - A description of previous RP experience.
+room2`consent - A description of consent-based role-playing.
+room2`source - Where the player heard about New Horizon.
+
+!--
+
+-- Room 3 - Character Information
+
+room3`status - The status for the individual section. C: Complete, I: Incomplete, R: Revisions Required
+room3`ctype - The character type, currently limited to ROC.
+room3`fullname - The fullname of the character.
+room3`dob - Date of birth of the character.
+room3`race - The race of the character, Human, Zentran/Meltran, Zolan or combination
+room3`faction - The character's faction, AUN, Merc, Civvy, UN, Pir.
+room3`function - What the character does.
+room3`rank - What the character's rank is in their faction.
+room3`wealth - The wealth number they would like and their justification.
+room3`quote - Their character's quote.
+room3`profile - A paragraph about the character's history and personality
+!--
+
+-- Room 4 - Personality
+
+room4`status - The status for the individual section. C: Complete, I: Incomplete, R: Revisions Required
+room4`personality - Contains the personality.
+
+!--
+
+-- Room 5 - History
+
+room5`status - The status for the individual section. C: Complete, I: Incomplete, R: Revisions Required
+room5`history`# - Contains the history on separate pages up to page 9.
 
 !--

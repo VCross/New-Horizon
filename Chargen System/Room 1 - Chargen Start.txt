@@ -148,13 +148,30 @@ Registers
 /// Sets all the character's stats and skills to 0, and HP and SP to base levels.
 &create`setup`sheet #1489=[iter([lattr(#80/XY`*)],[attrib_set(%q<newDbref>/##,0)])][attrib_set(%q<newDbref>/xy`7,100)][attrib_set(%q<newDbref>/xy`7`c,100)][attrib_set(%q<newDbref>/xy`8,100)][attrib_set(%q<newDbref>/xy`8`c,100)][setq(locks,%q<locks> xy)]
 
-/// Prepares the char for the chargen process
-&create`setup`chargen #1489=[attrib_set(#1489/db`%q<newDbref>,[secs()])][attrib_set(#1489/db`%q<newDbref>`2`status,I)][attrib_set(#1489/db`%q<newDbref>`status,NS)]
-
 /// Locks all the attributes that need to be locked.
 &create`setup`lock #1489=[iter(%q<locks>,[set(%q<newDbref>/##,w)][set(%q<newDbref>/##,m)])]
 
 &create`setup`finish #1489=[tel(%q<newDbref>,[loc(%#)])][pemit(%#,[ansi(ch,Congratulations! Your new character, ' [ansi(wh,[name(%q<newDbref>)])] ' has been created with the password ' [ansi(wh,%0)] '.)])]
+
+
+!--
+
+--function create`setup`chargen
+//
+Sets the player up to run through the chargen process. This code does things like prepare their application object.
+
+Registers In:
+	newDbref - Dbref of the new character object.
+	
+Registers:
+	appDbref - Dbref of the object that represents the app.
+!//
+
+&create`setup`chargen #1489=[attrib_set(#1489/db`%q<newDbref>,%q<appDbref>|[secs()])][u(create`setup`chargen`createobject)][u(create`setup`chargen`prepare)]
+
+&create`setup`chargen`createobject #1489=[if([setr(appDbref,[create([name(%q<newDbref>)] App)])],,[pemit(%#,Error - Could not create application object. Please contact an admin before continuing the chargen process.)])]
+
+&create`setup`chargen`prepare #1489=[attrib_set(#1489/db`%q<newDbref>,%q<appDbref>|[secs()])][attrib_set(%q<appDbref>/status,NS)][attrib_set(%q<appDbref>/room2`status,I)][attrib_set(%q<appDbref>/room3`status,I)][attrib_set(%q<appDbref>/room3`ctype,ROC)][attrib_set(%q<appDbref>/room4`status,I)][attrib_set(%q<appDbref>/room5`status,I)][attrib_set(%q<appDbref>/room6`status,I)][attrib_set(%q<appDbref>/room6`lck,[u(#1489/room6`runluck)])]
 
 
 !--

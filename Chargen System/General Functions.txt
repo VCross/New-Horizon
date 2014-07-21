@@ -6,9 +6,174 @@ Purpose:
 
 This file contains some general functions and attributes that are used by all the rooms.
 
--- function message`revise
-/// A message used by all rooms as part of their descriptions, saying that revision for a specific question is required.
+-- function message`*
+/// Messages used by all rooms either as part of their descriptions or in response to player input.
 
 &message`revise #1489=%b[ansi(yh,Revision Required)]
+&message`sectioncomplete #1489=You have [ansi(gh,Completed)] this section of the Chargen!
 
 !--
+
+-- function getapp
+//
+Gets the dbref of the app for the given player.
+
+In:
+	0 - The dbref of the player whoms app is being gotten. (If empty, defaults to calling player)
+Out:
+	Dbref of the app object for the passed player.
+!//
+
+&getapp #1489=[first([get(#1489/db`[if(%0,%0,%#)])],|)]
+!--
+
+-- function getinfo
+//
+Gets info about the app when provided an attribute and an optional dbref.
+
+In:
+	0 - Attribute to be gotten. Eg: room2`status.
+	1 - The dbref of the player to get the app info for. (Optional)
+Out:
+	Whatever is in the application attribute.
+!//
+
+&getinfo #1489=[get([u(getapp,[if(%1,%1,%#)])]/%0)]
+
+!--
+
+-- function get*
+//
+This section lists all the get functions for all the info in the apps. They all follow the same process. In addition to required arguments it takes one optional argument, the player dbref. Otherwise it gets the app for the calling player.
+
+In:
+	%0 - Dbref of the player to get (Optional)
+Out:
+	Whatever is in the application attribute.
+!//
+
+&getStatus #1489=[u(getinfo,status,[if(%0,%0,%#)])]
+&getRoom2Status #1489=[u(getinfo,room2`status,[if(%0,%0,%#)])]
+&getRoom2New #1489=[u(getinfo,room2`new,[if(%0,%0,%#)])]
+&getRoom2Alts #1489=[u(getinfo,room2`alts,[if(%0,%0,%#)])]
+&getRoom2Email #1489=[u(getinfo,room2`email,[if(%0,%0,%#)])]
+&getRoom2Name #1489=[u(getinfo,room2`name,[if(%0,%0,%#)])]
+&getRoom2Age #1489=[u(getinfo,room2`age,[if(%0,%0,%#)])]
+&getRoom2RPed #1489=[u(getinfo,room2`rped,[if(%0,%0,%#)])]
+&getRoom2Consent #1489=[u(getinfo,room2`consent,[if(%0,%0,%#)])]
+&getRoom2Source #1489=[u(getinfo,room2`source,[if(%0,%0,%#)])]
+
+&getRoom3CType #1489=[u(getinfo,room3`ctype,[if(%0,%0,%#)])]
+&getRoom3Fullname #1489=[u(getinfo,room3`fullname,[if(%0,%0,%#)])]
+&getRoom3DOB #1489=[u(getinfo,room3`dob,[if(%0,%0,%#)])]
+&getRoom3Race #1489=[u(getinfo,room3`race,[if(%0,%0,%#)])]
+&getRoom3Faction #1489=[u(getinfo,room3`faction,[if(%0,%0,%#)])]
+&getRoom3Function #1489=[u(getinfo,room3`function,[if(%0,%0,%#)])]
+&getRoom3Rank #1489=[u(getinfo,room3`rank,[if(%0,%0,%#)])]
+&getRoom3Wealth #1489=[u(getinfo,room3`wealth,[if(%0,%0,%#)])]
+&getRoom3Quote #1489=[u(getinfo,room3`quote,[if(%0,%0,%#)])]
+&getRoom3Profile #1489=[u(getinfo,room3`profile,[if(%0,%0,%#)])]
+
+&getRoom4Status #1489=[u(getinfo,room4`status,[if(%0,%0,%#)])]
+&getRoom4Personality #1489=[u(getinfo,room4`personality,[if(%0,%0,%#)])]
+
+&getRoom5Status #1489=[u(getinfo,room5`status,[if(%0,%0,%#)])]
+/// Special get... %0 is the page to get, %1 is the optional player dbref
+&getRoom5History #1489=[u(getinfo,room5`history`%0,[if(%1,%1,%#)])]
+
+&getRoom6Status #1489=[u(getinfo,room6`status,[if(%0,%0,%#)])]
+/// Special get... %0 is the stat to get, %1 is the optional player dbref
+&getRoom6Stat #1489=[u(getinfo,room6`%0,[if(%1,%1,%#)])]
+
+!--
+
+-- function has*
+//
+Much like above, this section lists all the functions to check whether the app has the given attribute. In addition to required arguments it takes one optional argument, a dbref of the player whoms app is being checked, otherwise it's the calling player.
+
+In:
+	%0 - Dbref of the player to get (Optional)
+Out:
+	1/0 - If the attribute is there.
+!//
+
+&hasStatus #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/status)]
+&hasRoom2Status #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/room2`status)]
+&hasRoom2New #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/room2`new)]
+&hasRoom2Alts #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/room2`alts)]
+&hasRoom2Email #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/room2`email)]
+&hasRoom2Name #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/room2`name)]
+&hasRoom2Age #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/room2`age)]
+&hasRoom2RPed #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/room2`rped)]
+&hasRoom2Consent #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/room2`consent)]
+&hasRoom2Source #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/room2`source)]
+
+&hasRoom3CType #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/room3`ctype)]
+&hasRoom3Fullname #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/room3`fullname)]
+&hasRoom3DOB #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/room3`dob)]
+&hasRoom3Race #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/room3`race)]
+&hasRoom3Faction #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/room3`faction)]
+&hasRoom3Function #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/room3`function)]
+&hasRoom3Rank #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/room3`rank)]
+&hasRoom3Wealth #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/room3`wealth)]
+&hasRoom3Quote #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/room3`quote)]
+&hasRoom3Profile #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/room3`profile)]
+
+&hasRoom4Status #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/room4`status)]
+&hasRoom4Personality #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/room4`personality)]
+
+&hasRoom5Status #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/room5`status)]
+/// Special has... %0 is history page number, %1 is optional dbref
+&hasRoom5History #1489=[hasattrval([u(getapp,[if(%1,%1,%#)])]/room5`history`%0)]
+
+&hasRoom6Status #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/room6`status)]
+/// Special has... %0 is stat, %1 is optional dbref
+&hasRoom6Stat #1489=[hasattrval([u(getapp,[if(%1,%1,%#)])]/room6`%0)]
+
+!--
+
+-- function set*
+//
+Much like above, this section lists all the functions to set the given attribute on the app. In addition to required arguments it takes one optional argument, a dbref of the player whoms app is being modified, otherwise it's the calling player.
+
+In:
+	%0 - The info to set.
+	%1 - Dbref of the player to set (Optional)
+Out:
+	Sets the attribute with the passed info.
+!//
+
+&setStatus #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/status,%0)]
+&setRoom2Status #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room2`status,%0)]
+&setRoom2New #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room2`new,%0)]
+&setRoom2Alts #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room2`alts,%0)]
+&setRoom2Email #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room2`email,%0)]
+&setRoom2Name #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room2`name,%0)]
+&setRoom2Age #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room2`age,%0)]
+&setRoom2RPed #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room2`rped,%0)]
+&setRoom2Consent #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room2`consent,%0)]
+&setRoom2Source #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room2`source,%0)]
+
+&setRoom3CType #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room3`ctype,%0)]
+&setRoom3Fullname #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room3`fullname,%0)]
+&setRoom3DOB #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room3`dob,%0)]
+&setRoom3Race #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room3`race,%0)]
+&setRoom3Faction #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room3`faction,%0)]
+&setRoom3Function #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room3`function,%0)]
+&setRoom3Rank #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room3`rank,%0)]
+&setRoom3Wealth #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room3`wealth,%0)]
+&setRoom3Quote #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room3`quote,%0)]
+&setRoom3Profile #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room3`profile,%0)]
+
+&setRoom4Status #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room4`status,%0)]
+&setRoom4Personality #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room4`personality,%0)]
+
+&setRoom5Status #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room5`status,%0)]
+/// Special set... %0 is the page to set, %1 is the info, %2 is the optional player dbref
+&setRoom5History #1489=[attrib_set([u(getapp,[if(%2,%2,%#)])]/room5`history`%0,%1)]
+
+&setRoom6Status #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room6`status,%0)]
+/// Special set... %0 is the stat to set, %1 is the info, %2 is the optional player dbref
+&setRoom6Stat #1489=[attrib_set([u(getapp,[if(%2,%2,%#)])]/room6`%0,%1)]
+!--
+
