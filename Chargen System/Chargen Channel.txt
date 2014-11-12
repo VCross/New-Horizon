@@ -1,0 +1,16 @@
+Filename: Chargen Channel
+Date: October 2014
+Programmer: Vincent Cross
+
+Purpose:
+
+The Chargen channel will have a number of functions. The first is to notify admin when a new charbit has been created in Room 1 of the chargen. This is to allow admin to monitor new char creation to make sure no one is abusing the system. The second is to notify admin when an app has been sent in for approval. Third, the channel will routinely announce current apps awaiting approval. Plus the channel may end up sending other messages in the future.
+
+-- Channel Creation
+
+@channel/add Chargen=admin quiet
+@channel/name Chargen=[ansi(wh,Chargen)]
+@channel/describe Chargen=Monitors the chargen process with notification messages.
+@channel/buffer Chargen=10
+
+!--

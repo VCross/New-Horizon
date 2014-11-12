@@ -9,18 +9,18 @@ This is a small room, beginning the character through the app process. It descri
 Are you a new player/have no existing alts? (room2`new)
 
 No:
-    - Current Alts (room2`alts) (R)
-    - Email Address (room2`email) (R)
+    - Current Alts (room2`alts)
+    - Email Address (room2`email)
     
 Yes:
 
-    - Name (real or commonly known online alias) (room2`name) (R)
-    - Age (room2`age) (R)
-    - Email Address (room2`email) (R)
+    - Name (real or commonly known online alias) (room2`name)
+    - Age (room2`age)
+    - Email Address (room2`email)
     
-    - Have you ever role-played online? (room2`rped) (R)
-    - What is consent based RP (room2`consent) (R)
-    - How did you find out about us. (room2`source) (R)
+    - Have you ever role-played online? (room2`rped)
+    - What is consent based RP (room2`consent)
+    - How did you find out about us. (room2`source)
 
 Both:
     
@@ -36,13 +36,14 @@ This section contains the code necessary to create the room. It is expected to b
 
 @dig Chargen 2 - Personal Information=Next;n;next,Back;b;back
 N
-@parent here=#333
+@parent here=Chargen Room Parent
 @set here=!no_command
+@set here=wizard
 @power here=see_all
 @desc here=Welcome to your new character! There first thing you should be aware of is the following command:%r%r[ansi([u(#1489/desc`color`cmd)],+app)]%r%rThis command will display information about your current app status, including which sections have been completed and later, which ones require alterations before approval.%r%rTo begin with, we will require some personal information about you. Below are the questions, commands and whatever answers you have currently added. Using any of these commands on their own (eg: Just '[ansi(ch,+consent)]') will tell you what you have written in it. Note that already approved characters will see all questions, so they can help new characters. Also, many of the questions through the app process will have character limits. So any long answers will be cut off.%r%r[u(desc`status)]%r%r[u(desc`new)]%r%r[u(desc`yesno`display)]
-@lock/command here=approved/0
+@lock/command here=checklock/1
+&checklock here=[cand([not([u(approved)])],[if([u(#1489/getapp)],1,0)],[switch([u(#1489/getStatus)],S,0,1)])]
 &approved here=[hasflag(%#,approved)]
-&command_lock`failure here=Error - You are already approved.
 !--
 
 -- Descriptions
@@ -50,28 +51,19 @@ N
 This section handles the various displays that can appear in the description of the room.
 !//
 
-&desc`color`question #1489=wh
-&desc`color`cmd #1489=ch
-&desc`color`incomplete #1489=rh
-&desc`color`complete #1489=gh
-&desc`color`submitted #1489=gh
-&desc`color`revision #1489=yh
-
-&desc`message`alreadyapproved #1489=[ansi(yh,Already Approved.)]
-
 /// Displays the current status of this room.
-&desc`status here=[ansi([u(#1489/desc`color`question)],Current Status:%b)][if([hasflag(%#,approved)],[u(#1489/desc`message`alreadyapproved)],[switch([u(#1489/getStatus)],NS,[u(desc`status`editable)],S,[ansi([u(#1489/desc`color`submitted)],App Submitted)],R,[u(desc`status`editable)])])]
+&desc`status here=[setq(playerDbref,%#)][u(#1489/desc`message`currentstatus)][if([hasflag(%q<playerDbref>,approved)],[u(#1489/desc`message`alreadyapproved)],[switch([u(#1489/getStatus,%q<playerDbref>)],NS,[u(desc`status`editable)],S,[u(#1489/desc`message`appsubmitted)],R,[u(desc`status`editable)])])]
 
-&desc`status`editable here=[switch([u(#1489/getRoom2Status)],I,[ansi([u(#1489/desc`color`incomplete)],Incomplete)],C,[ansi([u(#1489/desc`color`complete)],Complete)],R,[ansi(yh,Revisions Required)])]
+&desc`status`editable here=[switch([u(#1489/getRoom2Status,%q<playerDbref>)],I,[u(#1489/desc`message`appincomplete)],C,[ansi([u(#1489/desc`color`complete)],Complete)],R,[u(#1489/desc`message`revisionsrequired)])]
 
 /// Asks if they are a new player or not.
 &desc`new here=[u(desc`message`new)]%r([ansi(ch,+new Yes)] or [ansi(ch,+new No)])%r[u(desc`new`display)]
 
 &desc`message`new here=[ansi([u(#1489/desc`color`question)],Are you a new player to the MUSH and/or have no existing alts?)]
 
-&desc`new`display here=[if([hasflag(%#,approved)],[u(#1489/desc`message`alreadyapproved)],[if([u(#1489/hasRoom2New)],[if([u(#1489/getRoom2New)],Yes.,No.)])])]
+&desc`new`display here=[if([hasflag(%q<playerDbref>,approved)],[u(#1489/desc`message`alreadyapproved)],[if([u(#1489/hasRoom2New,%q<playerDbref>)],[if([u(#1489/getRoom2New,%q<playerDbref>)],Yes.,No.)])])]
 
-&desc`yesno`display here=[if([hasflag(%#,approved)],[u(desc`display`approved)],[if([u(#1489/hasRoom2New)],[if([u(#1489/getRoom2New)],[u(desc`email)]%r%r[u(desc`yes)],[u(desc`email)]%r%r[u(desc`no)])])])]
+&desc`yesno`display here=[if([hasflag(%q<playerDbref>,approved)],[u(desc`display`approved)],[if([u(#1489/hasRoom2New,%q<playerDbref>)],[if([u(#1489/getRoom2New,%q<playerDbref>)],[u(desc`email)]%r%r[u(desc`yes)],[u(desc`email)]%r%r[u(desc`no)])])])]
 
 &desc`display`approved here=[u(desc`email)]%r%r[u(desc`yes)]%r%r[u(desc`no)]
 
@@ -84,7 +76,7 @@ This section handles the various displays that can appear in the description of 
 
 &desc`message`alts here=[ansi([u(#1489/desc`color`question)],Please list your current alts.)]
 
-&desc`no`alts`display here=[if([hasflag(%#,approved)],%r[u(#1489/desc`message`alreadyapproved)],[if([u(#1489/hasRoom2Alts)],[switch([first([u(#1489/getRoom2Alts)],|)],R,[u(#1489/message`revise)])]%r[rest([u(#1489/getRoom2Alts)],|)])])]
+&desc`no`alts`display here=[if([hasflag(%q<playerDbref>,approved)],%r[u(#1489/desc`message`alreadyapproved)],[if([u(#1489/hasRoom2Alts,%q<playerDbref>)],%r[u(#1489/getRoom2Alts,%q<playerDbref>)])])]
 
 
 /// Yes - New player
@@ -95,35 +87,35 @@ This section handles the various displays that can appear in the description of 
 
 &desc`message`name here=[ansi([u(#1489/desc`color`question)],Your name, or a commonly used online alias.)]
 
-&desc`yes`name`display here=[if([hasflag(%#,approved)],%r[u(#1489/desc`message`alreadyapproved)],[if([u(#1489/hasRoom2Name)],[switch([first([u(#1489/getRoom2Name)],|)],R,[u(#1489/message`revise)])]%r[rest([u(#1489/getRoom2Name)],|)])])]
+&desc`yes`name`display here=[if([hasflag(%q<playerDbref>,approved)],%r[u(#1489/desc`message`alreadyapproved)],[if([u(#1489/hasRoom2Name,%q<playerDbref>)],%r[u(#1489/getRoom2Name,%q<playerDbref>)])])]
 
 /// Yes - Age
 &desc`yes`age here=[u(desc`message`age)]%r([ansi([u(#1489/desc`color`cmd)],+age <age>)])[u(desc`yes`age`display)]
 
 &desc`message`age here=[ansi([u(#1489/desc`color`question)],Your current age.)]
 
-&desc`yes`age`display here=[if([hasflag(%#,approved)],%r[u(#1489/desc`message`alreadyapproved)],[if([u(#1489/hasRoom2Age)],[switch([first([u(#1489/getRoom2Age)],|)],R,[u(#1489/message`revise)])]%r[rest([u(#1489/getRoom2Age)],|)])])]
+&desc`yes`age`display here=[if([hasflag(%q<playerDbref>,approved)],%r[u(#1489/desc`message`alreadyapproved)],[if([u(#1489/hasRoom2Age,%q<playerDbref>)],%r[u(#1489/getRoom2Age,%q<playerDbref>)])])]
 
 /// Yes - Previously RPed
 &desc`yes`rped here=[u(desc`message`rped)]%r([ansi([u(#1489/desc`color`cmd)],+rped <brief description of previous RP experience>)])[u(desc`yes`rped`display)]
 
 &desc`message`rped here=[ansi([u(#1489/desc`color`question)],Have you ever role-played online before?)]
 
-&desc`yes`rped`display here=[if([hasflag(%#,approved)],%r[u(#1489/desc`message`alreadyapproved)],[if([u(#1489/hasRoom2RPed)],[switch([first([u(#1489/getRoom2RPed)],|)],R,[u(#1489/message`revise)])]%r[align(70,[rest([u(#1489/getRoom2RPed)],|)])])])]
+&desc`yes`rped`display here=[if([hasflag(%q<playerDbref>,approved)],%r[u(#1489/desc`message`alreadyapproved)],[if([u(#1489/hasRoom2RPed,%q<playerDbref>)],%r[align(70,[u(#1489/getRoom2RPed,%q<playerDbref>)])])])]
 
 /// Yes - What is consent.
 &desc`yes`consent here=[u(desc`message`consent)]%r([ansi([u(#1489/desc`color`cmd)],+consent <brief description of consent-based role-playing)])[u(desc`yes`consent`display)]
 
 &desc`message`consent here=[ansi([u(#1489/desc`color`question)],What do you consider to be consent-based role-playing?)]
 
-&desc`yes`consent`display here=[if([hasflag(%#,approved)],%r[u(#1489/desc`message`alreadyapproved)],[if([u(#1489/hasRoom2Consent)],[switch([first([u(#1489/getRoom2Consent)],|)],R,[u(#1489/message`revise)])]%r[align(70,[rest([u(#1489/getRoom2Consent)],|)])])])]
+&desc`yes`consent`display here=[if([hasflag(%q<playerDbref>,approved)],%r[u(#1489/desc`message`alreadyapproved)],[if([u(#1489/hasRoom2Consent,%q<playerDbref>)],%r[align(70,[u(#1489/getRoom2Consent,%q<playerDbref>)])])])]
 
 /// Yes - Where they heard about the MUSH.
 &desc`yes`source here=[u(desc`message`source)]%r([ansi([u(#1489/desc`color`cmd)],+source <brief description where you heard about the MUSH)])[u(desc`yes`source`display)]
 
 &desc`message`source here=[ansi([u(#1489/desc`color`question)],Where did you hear about Macross: New Horizon?)]
 
-&desc`yes`source`display here=[if([hasflag(%#,approved)],%r[u(#1489/desc`message`alreadyapproved)],[if([u(#1489/hasRoom2Source)],[switch([first([u(#1489/getRoom2Source)],|)],R,[u(#1489/message`revise)])]%r[align(70,[rest([u(#1489/getRoom2Source)],|)])])])]
+&desc`yes`source`display here=[if([hasflag(%q<playerDbref>,approved)],%r[u(#1489/desc`message`alreadyapproved)],[if([u(#1489/hasRoom2Source,%q<playerDbref>)],%r[align(70,[u(#1489/getRoom2Source,%q<playerDbref>)])])])]
 
 
 /// Email - For both.
@@ -131,7 +123,7 @@ This section handles the various displays that can appear in the description of 
 
 &desc`message`email here=[ansi([u(#1489/desc`color`question)],What is your current email address? (Not publically viewable.))]
 
-&desc`email`display here=[if([hasflag(%#,approved)],%r[u(#1489/desc`message`alreadyapproved)],[if([u(#1489/hasRoom2Email)],[switch([first([u(#1489/getRoom2Email)],|)],R,[u(#1489/message`revise)])]%r[rest([u(#1489/getRoom2Email)],|)])])]
+&desc`email`display here=[if([hasflag(%q<playerDbref>,approved)],%r[u(#1489/desc`message`alreadyapproved)],[if([u(#1489/hasRoom2Email,%q<playerDbref>)],%r[u(#1489/getRoom2Email,%q<playerDbref>)])])]
 
 !--
 
@@ -192,7 +184,7 @@ Out:
 
 &limit`2`email #1489=50
 
-&cmd_+email-noarg here=$+email:think [if([u(#1489/hasRoom2Email)],[pemit(%#,[rest([u(#1489/getRoom2Email)],|)])],[pemit(%#,Nothing entered yet.)])]
+&cmd_+email-noarg here=$+email:think [if([u(#1489/hasRoom2Email)],[pemit(%#,[u(#1489/getRoom2Email)])],[pemit(%#,Nothing entered yet.)])]
 
 !--
 
@@ -207,9 +199,9 @@ Out:
 	room2`email - The DB attribute containing the given email address.
 !//
 
-&room2`email #1489=[if([strmatch(%0,*@*)],[u(setRoom2Email,C|%0)][attrib_set(%#/email,!%0)][u(message`2`email)],[u(room2`email`error)])]
+&room2`email #1489=[if([strmatch(%0,*@*)],[u(setRoom2Email,%0)][attrib_set(%#/email,!%0)][u(message`2`email)],[u(room2`email`error)])]
 
-&message`2`email #1489=[pemit(%#,You have entered '[rest([u(getRoom2Email)],|)]' for your email address.)]
+&message`2`email #1489=[pemit(%#,You have entered '[u(getRoom2Email)]' for your email address.)]
 
 &room2`email`error #1489=[pemit(%#,Error - Invalid email address.)]
 
@@ -230,7 +222,7 @@ Out:
 
 &limit`2`alts #1489=100
 
-&cmd_+alts-noarg here=$+alts:think [if([u(#1489/hasRoom2Alts)],[pemit(%#,[rest([u(#1489/getRoom2Alts)],|)])],[pemit(%#,Nothing entered yet.)])]
+&cmd_+alts-noarg here=$+alts:think [if([u(#1489/hasRoom2Alts)],[pemit(%#,[u(#1489/getRoom2Alts)])],[pemit(%#,Nothing entered yet.)])]
 
 !--
 
@@ -245,9 +237,9 @@ Out:
 	room2`alts - The DB attribute containing the given list of alts.
 !//
 
-&room2`alts #1489=[u(setRoom2Alts,C|%0)][u(message`2`alts)]
+&room2`alts #1489=[u(setRoom2Alts,%0)][u(message`2`alts)]
 
-&message`2`alts #1489=[pemit(%#,You have entered the following alts: [rest([u(getRoom2Alts)],|)])]
+&message`2`alts #1489=[pemit(%#,You have entered the following alts: [u(getRoom2Alts)])]
 
 !--
 
@@ -266,7 +258,7 @@ Out:
 
 &limit`2`name #1489=40
 
-&cmd_+name-noarg here=$+name:think [if([u(#1489/hasRoom2Name)],[pemit(%#,[rest([u(#1489/getRoom2Name)],|)])],[pemit(%#,Nothing entered yet.)])]
+&cmd_+name-noarg here=$+name:think [if([u(#1489/hasRoom2Name)],[pemit(%#,[u(#1489/getRoom2Name)])],[pemit(%#,Nothing entered yet.)])]
 
 !--
 
@@ -281,9 +273,9 @@ Out:
 	room2`name - The DB attribute containing the given name or alias.
 !//
 
-&room2`name #1489=[u(setRoom2Name,C|%0)][u(message`2`name)]
+&room2`name #1489=[u(setRoom2Name,%0)][u(message`2`name)]
 
-&message`2`name #1489=[pemit(%#,You name or alias is: [rest([u(getRoom2Name)],|)])]
+&message`2`name #1489=[pemit(%#,You name or alias is: [u(getRoom2Name)])]
 
 !--
 
@@ -302,7 +294,7 @@ Out:
 
 &limit`2`age #1489=2
 
-&cmd_+age-noarg here=$+age:think [if([u(#1489/hasRoom2Age)],[pemit(%#,[rest([u(#1489/getRoom2Age)],|)])],[pemit(%#,Nothing entered yet.)])]
+&cmd_+age-noarg here=$+age:think [if([u(#1489/hasRoom2Age)],[pemit(%#,[u(#1489/getRoom2Age)])],[pemit(%#,Nothing entered yet.)])]
 
 !--
 
@@ -317,9 +309,9 @@ Out:
 	room2`age - The DB attribute containing the given age.
 !//
 
-&room2`age #1489=[u(setRoom2Age,C|%0)][u(message`2`age)]
+&room2`age #1489=[u(setRoom2Age,%0)][u(message`2`age)]
 
-&message`2`age #1489=[pemit(%#,You are [rest([u(getRoom2Age)],|)] years old.)]
+&message`2`age #1489=[pemit(%#,You are [u(getRoom2Age)] years old.)]
 
 !--
 
@@ -338,7 +330,7 @@ Out:
 
 &limit`2`rped #1489=200
 
-&cmd_+rped-noarg here=$+rped:think [if([u(#1489/hasRoom2RPed)],[pemit(%#,[rest([u(#1489/getRoom2RPed)],|)])],[pemit(%#,Nothing entered yet.)])]
+&cmd_+rped-noarg here=$+rped:think [if([u(#1489/hasRoom2RPed)],[pemit(%#,[u(#1489/getRoom2RPed)])],[pemit(%#,Nothing entered yet.)])]
 
 !--
 
@@ -353,9 +345,9 @@ Out:
 	room2`rped - The DB attribute containing the given response.
 !//
 
-&room2`rped #1489=[u(setRoom2RPed,C|%0)][u(message`2`rped)]
+&room2`rped #1489=[u(setRoom2RPed,%0)][u(message`2`rped)]
 
-&message`2`rped #1489=[pemit(%#,Your previous RP experience: [rest([u(getRoom2RPed)],|)])]
+&message`2`rped #1489=[pemit(%#,Your previous RP experience: [u(getRoom2RPed)])]
 
 !--
 
@@ -374,7 +366,7 @@ Out:
 
 &limit`2`consent #1489=200
 
-&cmd_+consent-noarg here=$+consent:think [if([u(#1489/hasRoom2Consent)],[pemit(%#,[rest([u(#1489/getRoom2Consent)],|)])],[pemit(%#,Nothing entered yet.)])]
+&cmd_+consent-noarg here=$+consent:think [if([u(#1489/hasRoom2Consent)],[pemit(%#,[u(#1489/getRoom2Consent)])],[pemit(%#,Nothing entered yet.)])]
 
 !--
 
@@ -389,9 +381,9 @@ Out:
 	room2`consent - The DB attribute containing the given response.
 !//
 
-&room2`consent #1489=[u(setRoom2Consent,C|%0)][u(message`2`consent)]
+&room2`consent #1489=[u(setRoom2Consent,%0)][u(message`2`consent)]
 
-&message`2`consent #1489=[pemit(%#,You consider consent-based RP to be: [rest([u(getRoom2Consent)],|)])]
+&message`2`consent #1489=[pemit(%#,You consider consent-based RP to be: [u(getRoom2Consent)])]
 
 !--
 
@@ -410,7 +402,7 @@ Out:
 
 &limit`2`source #1489=200
 
-&cmd_+source-noarg here=$+source:think [if([u(#1489/hasRoom2Source)],[pemit(%#,[rest([u(#1489/getRoom2Source)],|)])],[pemit(%#,Nothing entered yet.)])]
+&cmd_+source-noarg here=$+source:think [if([u(#1489/hasRoom2Source)],[pemit(%#,[u(#1489/getRoom2Source)])],[pemit(%#,Nothing entered yet.)])]
 
 !--
 
@@ -425,9 +417,9 @@ Out:
 	room2`source - The DB attribute containing the given response.
 !//
 
-&room2`source #1489=[u(setRoom2Source,C|%0)][u(message`2`source)]
+&room2`source #1489=[u(setRoom2Source,%0)][u(message`2`source)]
 
-&message`2`source #1489=[pemit(%#,How you heard about New Horizon: [rest([u(getRoom2Source)],|)])]
+&message`2`source #1489=[pemit(%#,How you heard about New Horizon: [u(getRoom2Source)])]
 
 !--
 
@@ -435,16 +427,19 @@ Out:
 //
 The code in this function involves checking the status of this room to see if it can be considered complete or not. This information is stored in room2`status as C - Complete, I - Incomplete or R - Revisions Required.
 
+Registers:
+	foundEmpty - Found a field that's empty.
+
 Out:
 	room2`status - Changes this between C/I/R depending upon the status of the questions.
 !//
 
 &checkstatus here=[switch([u(#1489/getRoom2New)],0,[u(checkstatus`run,old)],1,[u(checkstatus`run,new)])]
 
-&checkstatus`run here=[setq(complete,1)][iter([u(checkstatus`%0`dblist)],[switch([first([get([u(#1489/getapp)]/[itext(0)])],|)],R,[u(#1489/setRoom2Status,R)][setq(complete,0)][ibreak()],C,,[u(#1489/setRoom2Status,I)][setq(complete,0)][ibreak()])])][if(%q<complete>,[switch([u(#1489/getRoom2Status)],C,,[pemit(%#,[u(#1489/message`sectioncomplete)])])][u(#1489/setRoom2Status,C)])]
+&checkstatus`run here=[u(updateapp,%#)][iter([u(checkstatus`%0`dblist)],[if([u(#1489/has%i0)],,[setq(foundEmpty,1)])])][if(%q<foundEmpty>,,[switch([u(#1489/getRoom2Status)],C,,[pemit(%#,[u(#1489/message`sectioncomplete)])][u(#1489/setRoom2Status,C)])])]
 
-&checkstatus`old`dblist here=room2`alts room2`email
+&checkstatus`old`dblist here=room2alts room2email
 
-&checkstatus`new`dblist here=room2`email room2`name room2`age room2`rped room2`consent room2`source
+&checkstatus`new`dblist here=room2email room2name room2age room2rped room2consent room2source
 
 !--

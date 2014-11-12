@@ -1,0 +1,72 @@
+Filename: Room 9 - Finish
+Date: October 2014
+Programmer: Vincent Cross
+
+Purpose:
+
+This room is the end of the chargen process. It displays information about the character's current app, including which sections have been completed, which require revisions, and that overall status of their app. Plus it's here that a player submits their app.
+
+#1489/db`%# - Contains the dbref of the relevant app object and the date the application was last active.
+
+status - The overall status of the application. NS: Not submitted, S: Submitted, R: Returned, A: Approved
+    
+Chargen Code: #1489
+Generic Room Parent: #333
+Chargen Room Parent: #1482
+
+-- Room Creation
+//
+This section contains the code necessary to create the room. It is expected to be performed from Room 8.
+!//
+
+@dig Chargen 9 - Finish=Next;n;next,Back;b;back
+N
+@parent here=Chargen Room Parent
+@set here=!no_command
+@set here=wizard
+@power here=see_all
+@desc here=Congratulations! You're at the end of the road. Assuming you've followed all the directions so far, you should see all your app sections as complete. This means you're ready to submit it! Make sure everything is correct, as you won't be able to edit the app after submitting it. If it is returned as requiring revisions, then you can make changes. Otherwise, it will be approved! In order to submit your app for approval, simply use:%r%r'[ansi([u(#1489/desc`color`cmd)],+submit)]'%r%r[u(desc`status)]
+@lock/command here=checklock/1
+&checklock here=[cand([not([u(approved)])],[if([u(#1489/getapp)],1,0)],[switch([u(#1489/getStatus)],S,0,1)])]
+&approved here=[hasflag(%#,approved)]
+!--
+
+-- Descriptions
+//
+This section handles the description of the room and what is displayed about the current app's status.
+!//
+
+/// Displays the current status of this room.
+&desc`status here=[u(#1489/app)]
+!--
+
+-- command +submit
+//
+Simply sets the app status to submitted so that it is ready for review.
+!//
+
+&cmd_+submit here=$+submit:think [u(#1489/room9`submit)]
+!--
+
+-- function submit
+//
+The main runcode for +submit. Checks to see if the player can modify the status to submitted, then sets it.
+!//
+
+&room9`submit #1489=[switch([u(getStatus)],NS,[u(room9`submit`check)],S,[u(message`9`alreadysubmitted)],R,[u(room9`submit`check)],A,[u(message`9`approved)])]
+
+&room9`submit`check #1489=[if([strmatch(CCCCCCC,[iter([lnum(2,8)],[u(getRoom%i0Status)],%b,)])],[u(room9`submit`run)],[u(message`9`incomplete)])]
+
+&room9`submit`run #1489=[u(updateapp,%#)][u(setStatus,S)][u(message`9`submit)][u(room9`submit`notice)]
+
+&message`9`alreadysubmitted #1489=[pemit(%#,The app has already been submitted! Please wait for a response from admin.)]
+
+&message`9`approved #1489=[pemit(%#,The app has already been approved! Congratulations!)]
+
+&message`9`incomplete #1489=[pemit(%#,Part of your app is still incomplete or requires revisions.)]
+
+&message`9`submit #1489=[pemit(%#,You submit your app for approval!)]
+
+&room9`submit`notice #1489=[u(chargenchannel`submit)]
+
+!--

@@ -20,13 +20,14 @@ This section contains the code necessary to create the room. It is expected to b
 
 @dig Chargen 4 - Personality=Next;n;next,Back;b;back
 N
-@parent here=#333
+@parent here=Chargen Room Parent
 @set here=!no_command
+@set here=wizard
 @power here=see_all
 @desc here=The first step to creating the guts of your new character is their personality. Tell us about your character's personality. What makes them who they are, their general mannerisms, their outlook on life in space, how they view other factions/races and all that juicy stuff. Also tell us why you feel that others would want to RP with your character in particular.%r%rYou can record your personality with '[ansi([u(#1489/desc`color`cmd)],+personality <text>)]'. Remember that you can view your personality in full by simply using '[ansi([u(#1489/desc`color`cmd)],+personality)]'. The 'Current Personality' section below only displays a section of the beginning and end of your personality, as they are often too large to put in this room description.%r%r[u(desc`status)]%r%r[u(desc`personality)]
-@lock/command here=approved/0
+@lock/command here=checklock/1
+&checklock here=[cand([not([u(approved)])],[if([u(#1489/getapp)],1,0)],[switch([u(#1489/getStatus)],S,0,1)])]
 &approved here=[hasflag(%#,approved)]
-&command_lock`failure here=Error - You are already approved.
 !--
 
 -- Descriptions
@@ -34,25 +35,16 @@ N
 This section handles the description of the room and what is displayed about the current app's status.
 !//
 
-&desc`color`question #1489=wh
-&desc`color`cmd #1489=ch
-&desc`color`incomplete #1489=rh
-&desc`color`complete #1489=gh
-&desc`color`submitted #1489=gh
-&desc`color`revision #1489=yh
-
-&desc`message`alreadyapproved #1489=[ansi(yh,Already Approved.)]
-
 /// Displays the current status of this room.
-&desc`status here=[ansi([u(#1489/desc`color`question)],Current Status:%b)][if([hasflag(%#,approved)],[u(#1489/desc`message`alreadyapproved)],[switch([u(#1489/getStatus)],NS,[u(desc`status`editable)],S,[ansi([u(#1489/desc`color`submitted)],App Submitted)],R,[u(desc`status`editable)])])]
+&desc`status here=[u(#1489/desc`message`currentstatus)][if([hasflag(%#,approved)],[u(#1489/desc`message`alreadyapproved)],[switch([u(#1489/getStatus)],NS,[u(desc`status`editable)],S,[u(#1489/desc`message`appsubmitted)],R,[u(desc`status`editable)])])]
 
-&desc`status`editable here=[switch([u(#1489/getRoom4Status)],I,[ansi([u(#1489/desc`color`incomplete)],Incomplete)],C,[ansi([u(#1489/desc`color`complete)],Complete)],R,[ansi(yh,Revisions Required)])]
+&desc`status`editable here=[switch([u(#1489/getRoom4Status)],I,[u(#1489/desc`message`appincomplete)],C,[ansi([u(#1489/desc`color`complete)],Complete)],R,[u(#1489/desc`message`revisionsrequired)])]
 
 /// Displays the personality section.
 &desc`personality here=[ansi([u(#1489/desc`color`question)],Current Personality:)]%r[if([hasflag(%#,approved)],[u(#1489/desc`message`alreadyapproved)],[u(desc`personality`begin)][u(desc`personality`end)])]
 
 /// Displays a section of the personality's beginning.
-&desc`personality`begin here=[setq(personality,[last([u(#1489/getRoom4Personality)],|)])][setq(end,[iter([lpos(%q<personality>,.)],[if([gt([itext(0)],250)],[itext(0)][ibreak()])])])][if(%q<personality>,[left(%q<personality>,[add([if(%q<end>,%q<end>,[strlen(%q<personality>)])],1)])],None)][unsetq(end)]
+&desc`personality`begin here=[setq(personality,[u(#1489/getRoom4Personality)])][setq(end,[iter([lpos(%q<personality>,.)],[if([gt([itext(0)],250)],[itext(0)][ibreak()])])])][if(%q<personality>,[left(%q<personality>,[add([if(%q<end>,%q<end>,[strlen(%q<personality>)])],1)])],None)][unsetq(end)]
 
 /// Displays a section of the personality's ending.
 &desc`personality`end here=[setq(begin,[iter([lpos(%q<personality>,.)],[if([gt([itext(0)],[sub([setr(length,[strlen(%q<personality>)])],250)])],[itext(0)][ibreak()])])])][if([cand(%q<begin>,[gte([sub(%q<length>,250)],0)])],%r%r...[right(%q<personality>,[sub(%q<length>,%q<begin>,1)])])][unsetq(begin length)]
@@ -72,7 +64,7 @@ Out:
 
 &cmd_+personality here=$+personality *:think [u(#1489/room4`personality,%0)];think [u(checkstatus)]
 
-&cmd_+personality-noarg here=$+personality:think [if([u(#1489/hasRoom4Personality)],[pemit(%#,[rest([u(#1489/getRoom4Personality)],|)])],[pemit(%#,Nothing entered yet.)])]
+&cmd_+personality-noarg here=$+personality:think [if([u(#1489/hasRoom4Personality)],[pemit(%#,[u(#1489/getRoom4Personality)])],[pemit(%#,Nothing entered yet.)])]
 
 !--
 
@@ -87,7 +79,7 @@ Out:
 	room4`personality - The DB attribute containing the given response.
 !//
 
-&room4`personality #1489=[u(setRoom4Personality,C|%0)][u(message`4`personality)]
+&room4`personality #1489=[u(setRoom4Personality,%0)][u(message`4`personality)][u(updateapp,%#)]
 
 &message`4`personality #1489=[pemit(%#,You have set your personality. The abbreviated section in the room's description well tell you if it was cut off for being too large.)]
 
@@ -101,6 +93,6 @@ Out:
 	room4`status - Changes this between C/I/R depending upon the status of the questions.
 !//
 
-&checkstatus here=[setq(complete,1)][switch([first([u(#1489/getRoom4Personality)],|)],R,[u(#1489/setRoom4Status,R)][setq(complete,0)],C,,[u(#1489/setRoom4Status,I)][setq(complete,0)])][if(%q<complete>,[switch([u(#1489/getRoom4Status)],C,,[pemit(%#,[u(#1489/message`sectioncomplete)])])][u(#1489/setRoom4Status,C)])]
+&checkstatus here=[switch([u(#1489/getRoom4Status)],C,,[pemit(%#,[u(#1489/message`sectioncomplete)])][u(#1489/setRoom4Status,C)])]
 
 !--

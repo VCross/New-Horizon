@@ -20,13 +20,14 @@ This section contains the code necessary to create the room. It is expected to b
 
 @dig Chargen 5 - History=Next;n;next,Back;b;back
 N
-@parent here=#333
+@parent here=Chargen Room Parent
 @set here=!no_command
+@set here=wizard
 @power here=see_all
 @desc here=The next step on a character's journey is their history. Explain your character's history to us. What got them started doing what they're doing, why did they come out to the butt-end of nowhere to join the Horizon Fleet. OCs largely have free reign so long as they stick within Macross canon.%r%rAs histories can get rather long, this room uses a paging system. You can split your history up and place it into multiple pages if necessary. This is done using the '[ansi([u(#1489/desc`color`cmd)],+history <#>=<text>)]' command, where <#> is the page number you wish to edit. Below you will see a list of pages containing your history along with a few words from the beginning and end of each section, as well as how full that page is. You can view any page using '[ansi([u(#1489/desc`color`cmd)],+history <#>)]'. A page can be cleared using '[ansi([u(#1489/desc`color`cmd)],+history/clear <#>)]'.%r%rYou cannot set a page unless the previous one exists. For example, you cannot set page 5 without having page 4 already set. Also, in order for this section to be complete, you must have atleast a page 1.%r%rIt would be a good idea to use a text editor such as Notepad while working on this!%r%r[u(desc`status)]%r%r[u(desc`history)]
-@lock/command here=approved/0
+@lock/command here=checklock/1
+&checklock here=[cand([not([u(approved)])],[if([u(#1489/getapp)],1,0)],[switch([u(#1489/getStatus)],S,0,1)])]
 &approved here=[hasflag(%#,approved)]
-&command_lock`failure here=Error - You are already approved.
 !--
 
 -- Descriptions
@@ -34,31 +35,22 @@ N
 This section handles the description of the room and what is displayed about the current app's status.
 !//
 
-&desc`color`question #1489=wh
-&desc`color`cmd #1489=ch
-&desc`color`incomplete #1489=rh
-&desc`color`complete #1489=gh
-&desc`color`submitted #1489=gh
-&desc`color`revision #1489=yh
-
-&desc`message`alreadyapproved #1489=[ansi(yh,Already Approved.)]
-
 /// Displays the current status of this room.
-&desc`status here=[ansi([u(#1489/desc`color`question)],Current Status:%b)][if([hasflag(%#,approved)],[u(#1489/desc`message`alreadyapproved)],[switch([u(#1489/getStatus)],NS,[u(desc`status`editable)],S,[ansi([u(#1489/desc`color`submitted)],App Submitted)],R,[u(desc`status`editable)])])]
+&desc`status here=[setq(playerDbref,%#)][u(#1489/desc`message`currentstatus)][if([hasflag(%q<playerDbref>,approved)],[u(#1489/desc`message`alreadyapproved)],[switch([u(#1489/getStatus,%q<playerDbref>)],NS,[u(desc`status`editable)],S,[u(#1489/desc`message`appsubmitted)],R,[u(desc`status`editable)])])]
 
-&desc`status`editable here=[switch([u(#1489/getRoom5Status)],I,[ansi([u(#1489/desc`color`incomplete)],Incomplete)],C,[ansi([u(#1489/desc`color`complete)],Complete)],R,[ansi(yh,Revisions Required)])]
+&desc`status`editable here=[switch([u(#1489/getRoom5Status,%q<playerDbref>)],I,[u(#1489/desc`message`appincomplete)],C,[ansi([u(#1489/desc`color`complete)],Complete)],R,[u(#1489/desc`message`revisionsrequired)])]
 
 /// Displays the history sections.
 
-&desc`history here=[if([not([hasflag(%#,approved)])],[iter([sort([lattr([u(#1489/getapp)]/room5`history`*)])],[u(desc`history`section,[last([itext(0)],`)])],,%r%r)])]
+&desc`history here=[if([not([hasflag(%q<playerDbref>,approved)])],[iter([sort([lattr([u(#1489/getapp,%q<playerDbref>)]/room5`history`*)])],[u(desc`history`section,[last([itext(0)],`)])],,%r%r)])]
 
 /// Displays each individual section. %0 is the page number
 
-&desc`history`section here=[ansi([u(#1489/desc`color`question)],Page %0 ([u(desc`history`section`size,%0)]%%):)]%r[left([u(#1489/getRoom5History,%0)],25)] ... [right([u(#1489/getRoom5History,%0)],25)]
+&desc`history`section here=[ansi([u(#1489/desc`color`question)],Page %0 ([u(desc`history`section`size,%0)]%%):)]%r[left([u(#1489/getRoom5History,%0,%q<playerDbref>)],25)] [if([lt([strlen([u(#1489/getRoom5History,%0,%q<playerDbref>)])],30)],,... [right([u(#1489/getRoom5History,%0,%q<playerDbref>)],25)])]
 
 /// Returns the current amount of text in the page, ie how full it is. %0 is the page number.
 
-&desc`history`section`size here=[round([mul([fdiv([strlen([u(#1489/getRoom5History,%0)])],[u(#1489/room5`pagesizelimit)])],100)],0)]
+&desc`history`section`size here=[round([mul([fdiv([strlen([u(#1489/getRoom5History,%0,%q<playerDbref>)])],[u(#1489/room5`pagesizelimit)])],100)],0)]
 
 !--
 
@@ -94,7 +86,7 @@ Out:
 
 &room5`history #1489=[switch(%0,1,[if([lt([setr(length,[strlen(%1)])],[u(room5`pagesizelimit)])],[u(setRoom5History,%0,%1)][u(message`5`history,%0)],[u(message`5`toolong,%q<length>)])],[u(room5`history`continue,%0,%1)])]
 
-&room5`history`continue #1489=[if([cand([isnum(%0)],[gt(%0,0)],[u(hasRoom5History,[sub(%0,1)])])],[if([lt([strlen(%1)],[u(room5`pagesizelimit)])],[u(setRoom5History,%0,%1)][u(message`5`history,%0)],[u(message`5`toolong)])],[u(message`5`wrongpage)])]
+&room5`history`continue #1489=[if([cand([isnum(%0)],[gt(%0,0)],[u(hasRoom5History,[sub(%0,1)])])],[if([lt([strlen(%1)],[u(room5`pagesizelimit)])],[u(setRoom5History,%0,%1)][u(updateapp,%#)][u(message`5`history,%0)],[u(message`5`toolong)])],[u(message`5`wrongpage)])]
 
 /// Max amount of characters per page.
 &room5`pagesizelimit #1489=4000
@@ -133,7 +125,7 @@ Out:
 	Clears the specified page of any history.
 !//
 
-&room5`history-clear #1489=[if([u(hasRoom5History,%0)],[attrib_set([u(getapp)]/room5`history`%0)][u(#1489/message`5`clear,%0)],[u(#1489/message`5`nopage)])]
+&room5`history-clear #1489=[if([u(hasRoom5History,%0)],[u(updateapp,%#)][attrib_set([u(getapp)]/room5`history`%0)][u(#1489/message`5`clear,%0)],[u(#1489/message`5`nopage)])]
 
 &message`5`clear #1489=[pemit(%#,You have cleared page %0 of your history.)]
 

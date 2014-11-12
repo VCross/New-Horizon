@@ -1,0 +1,139 @@
+Filename: Room 7 - Skills
+Date: August 2014
+Programmer: Vincent Cross
+
+Purpose:
+
+Much like the stats room, this one helps the player get their skills set up for application to their character. 
+
+As rookie OCs the following limitations are placed on their skills:
+
+-No more than 2 skills at 5
+-No more than 5 skills at 4
+-Any number of skills at 3 or less.
+
+For security reasons, the skills won't actually be placed on the character themselves. Instead they'll be stored inside the database like the other application info until approved. They'll all fall under the attribute tree room7`skills`### where ### is the skill number.
+    
+- Section status?  C - Complete, I - Incomplete, R - Revisions Required (room7`status)
+    
+Chargen Code: #1489
+Generic Room Parent: #333
+
+-- Room Creation
+//
+This section contains the code necessary to create the room. It is expected to be performed from Room 6.
+!//
+
+@dig Chargen 7 - Skills=Next;n;next,Back;b;back
+N
+@parent here=Chargen Room Parent
+@set here=!no_command
+@set here=wizard
+@power here=see_all
+@desc here=Now that you have your stats, it is time to set your skills. Below is a list of all the skills in the game and what value you have it set to. The commands here work much like in the previous room, except you can also use the skill number (under SK#) to set the skill. Here is the command:%r%r'[ansi([u(#1489/desc`color`cmd)],+skill <skill name or #>=<#>)]' - Set your requested skill.%r'[ansi([u(#1489/desc`color`cmd)],+finish)]' - Signal you've finished setting skills. Use to toggle back.%r%r[u(desc`status)]%r%r[u(desc`skills)]
+@lock/command here=checklock/1
+&checklock here=[cand([not([u(approved)])],[if([u(#1489/getapp)],1,0)],[switch([u(#1489/getStatus)],S,0,1)])]
+&approved here=[hasflag(%#,approved)]
+&desc`color`highlight #1489=wh
+!--
+
+-- Descriptions
+//
+This section handles the description of the room and what is displayed about the current app's status.
+!//
+
+/// Displays the current status of this room.
+&desc`status here=[setq(playerDbref,%#)][u(#1489/desc`message`currentstatus)][if([hasflag(%q<playerDbref>,approved)],[u(#1489/desc`message`alreadyapproved)],[switch([u(#1489/getStatus,%q<playerDbref>)],NS,[u(desc`status`editable)],S,[u(#1489/desc`message`appsubmitted)],R,[u(desc`status`editable)])])]
+
+&desc`status`editable here=[switch([u(#1489/getRoom7Status,%q<playerDbref>)],I,[u(#1489/desc`message`appincomplete)],C,[u(#1489/desc`message`complete)],R,[u(#1489/desc`message`revisionsrequired)])]
+
+/// Displays the skills.
+&desc`color`skilltype here=wh
+&desc`color`columntitle here=yh
+&desc`skillsectionwidths here=25 4 4
+
+&desc`skills here=[align(35 1. 35,[u(desc`skills`title)]%r%r[u(desc`skills`skillgroup,combat_skills,COMBAT SKILLS)]%r%r[u(desc`skills`skillgroup,movement_skills,MOVEMENT SKILLS)]%r%r[u(desc`skills`skillgroup,vehicle_skills,VEHICLE OPERATION SKILLS)]%r%r[u(desc`skills`skillgroup,specialty_skills,SPECIALTY SKILLS)],%b%b,[u(desc`skills`title)]%r%r[u(desc`skills`skillgroup,information_skills,INFORMATION SKILLS)]%r%r[u(desc`skills`skillgroup,performance_skills,PERFORMANCE SKILLS)]%r%r[u(desc`skills`skillgroup,spiritia_skills,SPIRITIA SKILLS)])]
+
+&desc`skills`title here=[align([u(desc`skillsectionwidths)],[ansi([u(desc`color`columntitle)],Skill Name)],[ansi([u(desc`color`columntitle)],LVL)],[ansi([u(desc`color`columntitle)],SK#)])]
+
+/// %0 - #80 skill list attribute, %1 - Title
+&desc`skills`skillgroup here=[setq(skillList,[get(#80/%0)])][ansi([u(desc`color`skilltype)],%1)]%r[iter(%q<skillList>,[align([u(desc`skillsectionwidths)],[get(#80/xy`%i0)],[if([u(#1489/hasRoom7Skill,xy`%i0,%q<playerDbref>)],[u(#1489/getRoom7Skill,xy`%i0,%q<playerDbref>)],0)],%i0)],%b,%r)]
+!--
+
+-- command +skill
+//
+This command records the player's requested skill for their character.
+
+In:
+	%0 - The skill to edit, either by name or number
+	%1 - The number that they want the skill at
+	
+Out:
+	room7`xy`??? - The attribute to set.
+!//
+
+&cmd_+skill here=$+skill *=?:think [u(#1489/room7`skill,[secure([decompose(%0)])],[secure([decompose(%1)])])];think [u(checkstatus)]
+
+!--
+
+-- function skill
+//
+The main code to run the +skill command.
+
+In:
+	%0 - The skill to edit.
+	%1 - The number that they want the skill at
+
+Registers:
+	namematch - The number of list of numbers that matched the given name.
+	
+Out:
+	room7`xy`??? - The attribute to set.
+!//
+
+&room7`skill #1489=[if([match([u(global`skilllist`numbers)],xy`%0)],[u(room7`skill`continue,xy`%0,%1)],[u(room7`skill`matchname,%0,%1)])]
+
+&room7`skill`matchname #1489=[if([u(room7`skill`matchname`exception,%0,%1)],,[switch([words([setr(namematch,[matchall([u(global`skilllist`names)],*%0*,|)])],|)],0,[u(message`7`nomatch,%0)],1,[u(room7`skill`getnumber,%q<namematch>,%1)],[u(message`7`multimatch,%0)])])]
+
+&room7`skill`matchname`exception #1489=[if([match(History,%0)],1[u(room7`skill`continue,xy`418,%1)],0)]
+
+/// %0 - Number of matched name in list. %1 - Number to set to.
+&room7`skill`getnumber #1489=[u(room7`skill`continue,[elements([u(global`skilllist`numbers)],%0)],%1)]
+
+/// %0 - xy`###. %1 - Number to set to.
+&room7`skill`continue #1489=[if([gt(%1,[u(room7`skill`max)])],[u(message`7`toohigh)],[u(setRoom7Skill,%0,%1)][u(updateapp,%#)][u(message`7`set,%0,%1)])]
+
+&room7`skill`max #1489=5
+
+/// %0 - Requested Skill
+&message`7`nomatch #1489=[pemit(%#,Error - Could not find a skill by the name of '%0'.)]
+
+&message`7`multimatch #1489=[pemit(%#,Error - Multiple matches found for '%0'.)]
+
+&message`7`toohigh #1489=[pemit(%#,Error - Skill cannot be set higher than [u(room7`skill`max)].)]
+
+&message`7`set #1489=[pemit(%#,You set your '[get(#80/%0)]' to %1.)]
+
+!--
+
+-- command +finish
+//
+A simple command to signify that the player has completed this section of the chargen.
+!//
+
+&cmd_+finish here=$+finish:think [switch([u(#1489/getRoom7Status)],C,[u(#1489/setRoom7Status,I)][pemit(%#,You set this room to [u(#1489/desc`message`appincomplete)].)],R,[u(#1489/setRoom7Status,C)][pemit(%#,[u(#1489/message`sectioncomplete)])],I,[u(#1489/setRoom7Status,C)][pemit(%#,[u(#1489/message`sectioncomplete)])])][u(updateapp,%#)]
+
+!--
+
+-- function checkstatus
+//
+The code in this function involves checking the status of this room to see if it can be considered complete or not. This information is stored in room7`status as C - Complete, I - Incomplete or R - Revisions Required.
+
+Out:
+	room7`status - Changes this between C/I/R depending upon the status of the questions.
+!//
+
+&checkstatus here=[switch([u(#1489/getRoom7Status)],C,[u(#1489/setRoom7Status,I)][pemit(%#,You have made changes to your skills so this part of the chargen has been set to [u(#1489/desc`message`appincomplete)].)])]
+
+!--
+

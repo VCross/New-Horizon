@@ -24,7 +24,7 @@ Out:
 	Dbref of the app object for the passed player.
 !//
 
-&getapp #1489=[first([get(#1489/db`[if(%0,%0,%#)])],|)]
+&getapp #1489=[elements([get(#1489/db`[if(%0,%0,%#)])],2,|)]
 !--
 
 -- function getinfo
@@ -42,6 +42,45 @@ Out:
 
 !--
 
+-- function getjobcount
+//
+Gets the current count of apps that have been created.
+
+Out:
+	A number of existing character apps.
+!//
+
+&getjobcount #1489=[u(jobcount)]
+
+!--
+
+-- function increasejobcount
+// 
+Adds 1 to the current job count.
+
+Out:
+	Increases the job count by 1.
+!//
+
+&increasejobcount #1489=[attrib_set(me/jobcount,[add(1,[v(jobcount)])])]
+
+!--
+
+-- function updateapp
+//
+Modifies the last updated field of the app to now. Takes one argument, the player dbref.
+
+In:
+	%0 - The player dbref relating to the app to be updated.
+	
+Out:
+	Modifies the 3rd field of db`# to secs()
+!//
+
+&updateapp #1489=[u(setUpdate,%0,secs())]
+
+!--
+
 -- function get*
 //
 This section lists all the get functions for all the info in the apps. They all follow the same process. In addition to required arguments it takes one optional argument, the player dbref. Otherwise it gets the app for the calling player.
@@ -53,6 +92,12 @@ Out:
 !//
 
 &getStatus #1489=[u(getinfo,status,[if(%0,%0,%#)])]
+&getJobNo #1489=[u(getinfo,jobno,[if(%0,%0,%#)])]
+&getHandler #1489=[u(getinfo,handler,[if(%0,%0,%#)])]
+&getRevisions #1489=[u(getinfo,revisions,[if(%0,%0,%#)])]
+&getUpdate #1489=[last([u(#1489/db`%0)],|)]
+&getNotes #1489=[iter([sort([lattr([u(getapp,[if(%0,%0,%#)])]/notes`*)])],[u(getinfo,%i0,[if(%0,%0,%#)],)],%b,%r[ansi(bh,[repeat(-,74)])]%r)]
+
 &getRoom2Status #1489=[u(getinfo,room2`status,[if(%0,%0,%#)])]
 &getRoom2New #1489=[u(getinfo,room2`new,[if(%0,%0,%#)])]
 &getRoom2Alts #1489=[u(getinfo,room2`alts,[if(%0,%0,%#)])]
@@ -63,6 +108,7 @@ Out:
 &getRoom2Consent #1489=[u(getinfo,room2`consent,[if(%0,%0,%#)])]
 &getRoom2Source #1489=[u(getinfo,room2`source,[if(%0,%0,%#)])]
 
+&getRoom3Status #1489=[u(getinfo,room3`status,[if(%0,%0,%#)])]
 &getRoom3CType #1489=[u(getinfo,room3`ctype,[if(%0,%0,%#)])]
 &getRoom3Fullname #1489=[u(getinfo,room3`fullname,[if(%0,%0,%#)])]
 &getRoom3DOB #1489=[u(getinfo,room3`dob,[if(%0,%0,%#)])]
@@ -85,6 +131,14 @@ Out:
 /// Special get... %0 is the stat to get, %1 is the optional player dbref
 &getRoom6Stat #1489=[u(getinfo,room6`%0,[if(%1,%1,%#)])]
 
+&getRoom7Status #1489=[u(getinfo,room7`status,[if(%0,%0,%#)])]
+/// Special get... %0 is the skill to get, %1 is the optional player dbref
+&getRoom7Skill #1489=[u(getinfo,room7`%0,[if(%1,%1,%#)])]
+
+&getRoom8Status #1489=[u(getinfo,room8`status,[if(%0,%0,%#)])]
+&getRoom8Equip #1489=[u(getinfo,room8`equip,[if(%0,%0,%#)])]
+&getRoom8Notes #1489=[u(getinfo,room8`notes,[if(%0,%0,%#)])]
+
 !--
 
 -- function has*
@@ -98,6 +152,10 @@ Out:
 !//
 
 &hasStatus #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/status)]
+&hasRevisions #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/revisions)]
+&hasNotes #1489=[hasattr([u(getapp,[if(%0,%0,%#)])],notes)]
+&hasHandler #1489=[not([match([get([u(getapp,[if(%0,%0,%#)])]/handler)],None)])]
+
 &hasRoom2Status #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/room2`status)]
 &hasRoom2New #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/room2`new)]
 &hasRoom2Alts #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/room2`alts)]
@@ -108,6 +166,7 @@ Out:
 &hasRoom2Consent #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/room2`consent)]
 &hasRoom2Source #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/room2`source)]
 
+&hasRoom3Status #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/room3`status)]
 &hasRoom3CType #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/room3`ctype)]
 &hasRoom3Fullname #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/room3`fullname)]
 &hasRoom3DOB #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/room3`dob)]
@@ -130,6 +189,14 @@ Out:
 /// Special has... %0 is stat, %1 is optional dbref
 &hasRoom6Stat #1489=[hasattrval([u(getapp,[if(%1,%1,%#)])]/room6`%0)]
 
+&hasRoom7Status #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/room7`status)]
+/// Special has... %0 is skill, %1 is optional dbref
+&hasRoom7Skill #1489=[hasattrval([u(getapp,[if(%1,%1,%#)])]/room7`%0)]
+
+&hasRoom8Status #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/room8`status)]
+&hasRoom8Equip #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/room8`equip)]
+&hasRoom8Notes #1489=[hasattrval([u(getapp,[if(%0,%0,%#)])]/room8`notes)]
+
 !--
 
 -- function set*
@@ -144,6 +211,12 @@ Out:
 !//
 
 &setStatus #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/status,%0)]
+&setHandler #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/handler,%0)]
+&setRevisions #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/revisions,%0)]
+/// %0 - Player Dbref, %1 - Usually secs()
+&setUpdate #1489=[attrib_set(#1489/db`%0,[replace([get(#1489/db`%0)],3,%1,|)])]
+&setNotes #1489=[if([u(hasNotes,[if(%1,%1,%#)])],[attrib_set([u(getapp,[if(%1,%1,%#)])]/notes`[add(1,[nattr([u(getapp,[if(%1,%1,%#)])]/notes`*)])],%0)],[attrib_set([u(getapp,[if(%1,%1,%#)])]/notes`1,%0)])]
+
 &setRoom2Status #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room2`status,%0)]
 &setRoom2New #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room2`new,%0)]
 &setRoom2Alts #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room2`alts,%0)]
@@ -154,6 +227,7 @@ Out:
 &setRoom2Consent #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room2`consent,%0)]
 &setRoom2Source #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room2`source,%0)]
 
+&setRoom3Status #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room3`status,%0)]
 &setRoom3CType #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room3`ctype,%0)]
 &setRoom3Fullname #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room3`fullname,%0)]
 &setRoom3DOB #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room3`dob,%0)]
@@ -175,5 +249,13 @@ Out:
 &setRoom6Status #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room6`status,%0)]
 /// Special set... %0 is the stat to set, %1 is the info, %2 is the optional player dbref
 &setRoom6Stat #1489=[attrib_set([u(getapp,[if(%2,%2,%#)])]/room6`%0,%1)]
+
+&setRoom7Status #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room7`status,%0)]
+/// Special set... %0 is the skill to set, %1 is the info, %2 is the optional player dbref
+&setRoom7Skill #1489=[attrib_set([u(getapp,[if(%2,%2,%#)])]/room7`%0,%1)]
+
+&setRoom8Status #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room8`status,%0)]
+&setRoom8Equip #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room8`equip,%0)]
+&setRoom8Notes #1489=[attrib_set([u(getapp,[if(%1,%1,%#)])]/room8`notes,%0)]
 !--
 

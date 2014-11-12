@@ -1,0 +1,54 @@
+Filename: Globals
+Date: September 2014
+Programmer: Vincent Cross
+
+Purpose:
+
+Records all the global variables for the chargen system.
+
+-- Globals
+
+&global`lock`error #1489=[if([hasflag(%#,approved)],Error - You are already approved.,[switch([u(getStatus)],S,Error - The app has been submitted. If you wish to make changes[,] please ask an admin to return it.,Error - You do not currently have an app connected to your character. Please speak with admin about this.)])]
+&global`skilllist`numbers #1489=[lattr(#80/xy`???)]
+&global`skilllist`names #1489=[iter([u(global`skilllist`numbers)],[get(#80/%i0)],%b,|)]
+
+&desc`color`question #1489=wh
+&desc`color`cmd #1489=ch
+&desc`color`incomplete #1489=rh
+&desc`color`complete #1489=gh
+&desc`color`submitted #1489=gh
+&desc`color`revision #1489=yh
+
+&global`color`appstitle #1489=yh
+
+&desc`message`alreadyapproved #1489=[ansi(yh,Already Approved.)]
+&desc`message`currentstatus #1489=[ansi([u(#1489/desc`color`question)],Current Status:%b)]
+&desc`message`appsubmitted #1489=[ansi([u(#1489/desc`color`submitted)],App Submitted)]
+&desc`message`appreturned #1489=[ansi([u(#1489/desc`color`revision)],App Returned)]
+&desc`message`appnotsubmitted #1489=[ansi([u(#1489/desc`color`incomplete)],App Not Submitted)]
+&desc`message`appapproved #1489=[ansi([u(#1489/desc`color`complete)],App Approved)]
+&desc`message`appincomplete #1489=[ansi([u(#1489/desc`color`incomplete)],Incomplete)]
+&desc`message`complete #1489=[ansi([u(#1489/desc`color`complete)],Complete)]
+&desc`message`revisionsrequired #1489=[ansi([u(#1489/desc`color`revision)],Revisions Required)]
+
+&chargenchannel`unarchive #1489=[cemit(Chargen,\([time()]\) %N has returned [name(%q<playerDbref>)]'s app from the archive as job number [u(#1489/getJobNo,%q<playerDbref>)].,1)]
+
+&chargenchannel`approve #1489=[cemit(Chargen,\([time()]\) %N has approved [name(%q<playerDbref>)]'s app for job number [u(#1489/getJobNo,%q<playerDbref>)].,1)]
+
+&chargenchannel`return #1489=[cemit(Chargen,\([time()]\) %N has returned [name(%q<playerDbref>)]'s app for revision on job number [u(#1489/getJobNo,%q<playerDbref>)].,1)]
+
+&chargenchannel`note #1489=[cemit(Chargen,\([time()]\) %N has added a note to [name(%q<playerDbref>)]'s app on job number [u(#1489/getJobNo,%q<playerDbref>)].,1)]
+
+&chargenchannel`replace #1489=[cemit(Chargen,\([time()]\) %N replaces [u(#1489/getHandler,%q<playerdbref>)] as the handler for App [u(#1489/getJobNo,%q<playerDbref>)]: [name(%q<playerDbref>)].,1)]
+
+&chargenchannel`sethandler #1489=[cemit(Chargen,\([time()]\) %N claims App [u(#1489/getJobNo,%q<playerDbref>)]: [name(%q<playerDbref>)].,1)]
+
+&chargenchannel`create #1489=[cemit(Chargen,\([time()]\) %N \([get(%#/lastsite)]\) has created a new character called [name(%q<newDbref>)].,1)]
+
+&chargenchannel`appswaiting #1489=[cemit(Chargen,\([time()]\) There are currently [words(%q<submitted>)] apps awaiting approval and [words(%q<unhandled>)] apps unclaimed.,1)]
+
+&chargenchannel`clean #1489=[cemit(Chargen,\([time()]\) %q<count> apps have been cleaned from the system due to inactivity.,1)]
+
+&chargenchannel`submit #1489=[cemit(Chargen,\([time()]\) %N has submitted their app for approval on job number [u(getJobNo)].,1)]
+
+!--

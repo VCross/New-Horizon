@@ -1,0 +1,627 @@
+Filename: Chargen Control Console
+Date: October 2014
+Programmer: Vincent Cross
+
+Purpose:
+
+This object is to be placed in the Char/Vehicle Setup room. It is from here that staff will manage currently submitted chargen apps. The following functions will be necessary for admin to control the process:
+
+apps - List of apps currently awaiting approval
+
+app# - Displays details about the app, mostly just its status and any pending revisions.
+
+claim - An admin claims an app. This is in order to let admin track who is doing what job and which jobs still need someone to process them. Keeps apps from being processed by more than one admin.
+
+return - This returns the app to the player without approval. This is typically because some revisions are required. The command will include a parameter to record the reason for the return, which will be @mailed to the character.
+
+revise - This will mark a section of the character's app as requiring revision.
+
+approve - Approves the app and the character for play.
+
+archive - Manually archives an app
+
+retrieve - Retrieves an app from the archive
+
+-- Object Creation
+
+@create Chargen Control Console <CCC>
+@set CCC=!no_command
+@set CCC=wizard
+@desc CCC=The Chargen Control Console is the primary means of managing apps being done through the on-MUSH chargen. The following commands are available for this purpose:%r%r[ansi(ch,+apps)]%rDisplays a list of apps currently part of the chargen process.%r%r[ansi(ch,+apps <job#>)]%rProvides more detail about the app.%r%r[ansi(ch,+apps/claim <job#>)]%rMarks you as the handler of an app in +apps.%r%r[ansi(ch,+apps/note <job#>=<note>)]%rAdds an admin-only note to the app, viewable using +apps <job#>.%r%r[ansi(ch,+apps/view <job#>=<section>)]%rViews a specific section of the app. <section> can be a room number or name as seen in +apps <job#>. Note that for history it only provides a brief breakdown of the character's history. For a more detailed view use:%r%r[ansi(ch,+apps/viewhistory <job#>=<page#>)]%rViews the specified page of the character's history.%r%r[ansi(ch,+apps/revise <job#>=<section>)]%rMarks a section of the app to be revised. <section> can be a room number or name as seen in +apps <job#>. Player won't receive notice to revise until the app is returned.%r%r[ansi(ch,+apps/return <job#>=<reason>)]%rReturns the app to the player, sending them an @mail with the reason why it was returned. The @mail also includes a list of sections marked as requiring revisions using +apps/revise. Command also adds the reason for the return as an admin note.%r%r[ansi(ch,+apps/approve <job#>)]%rApproves the app, setting everything up for the player and sending them an @mail confirming the approval.%r%r[ansi(ch,+apps/unarchive <app dbref>)]%rReturns an app from either the App Archive (#1546 - Where apps go once approved) or Dead Archive (#1547 - Where apps go after timing out) into the chargen process. Note that it sets approved characters as unapproved.
+@lock/command CCC=isAdmin/1
+&isAdmin CCC=[orflags(%#,Wr)]
+&command_lock`failure CCC=[pemit(%#,Error - You must be staff to use that command.)]
+
+think [setr(createDbref,[create(App Archive)])][attrib_set(#1489/archive,%q<createDbref>)]
+think [setr(createDbref,[create(Dead Archive)])][attrib_set(#1489/deadarchive,%q<createDbref>)]
+!--
+
+-- function findapp
+//
+Checks to see if there is an app with the passed job number currently active. Returns 1 or 0 depending upon the result. Also places the player DBref into playerDbref register
+
+In:
+	%0 - The job number to check for.
+
+Register Out:
+	playerDbref - Dbref of the player related to the found app
+	
+Out:
+	1/0 - Depending on if the app exists for that job number.
+!//
+
+&findapp CCC=[if([setr(found,[match([iter([lattr(#1489/db`*)],[first([get(#1489/%i0)],|)])],%0)])],[setq(playerDbref,[after([elements([lattr(#1489/db`*)],%q<found>)],`)])]1,0)][unsetq(found)]
+
+!--
+
+-- function getappplayer
+//
+Gets the dbref of the player related to the app from the passed job number and returns it. Gets player dbref as that's how all interaction with the app is accomplished.
+
+In:
+	%0 - The job number to get.
+
+Out:
+	Dbref of the player whos app corresponds to the job umber.
+!//
+
+&getappplayer CCC=[null([iter([lattr(#1489/db`*)],[if([match([first([get(#1489/%i0)],|)],%0)],[setq(playerDbref,[last(%i0,`)])][ibreak()])])])]%q<playerDbref>[unsetq(playerDbref)]
+
+!--
+
+-- command +apps/claim
+//
+Claims an app. Simply adds a staff's name to a character app so that staff can keep track of which apps are being attended to and by whom.
+
+In:
+	%0 - Job number of the app to be claimed.
+	
+Out:
+	Staffer name added to app.
+!//
+
+&cmd_+apps-claim CCC=$+apps/claim *:think [u(apps-claim,[secure([decompose(%0)])])]
+
+!--
+
+-- function apps-claim
+//
+Main run code for the +apps/claim command. Simply sets the attribute on the app and makes an announcement that the app has been claimed.
+
+In:
+	%0 - The job number of the app to be claimed.
+
+Registers:
+	playerDbref - The dbref of the player whos app corresponds to the job number
+	
+Out:
+	Staffer name added to app.
+	Message alerting to claiming.
+!//
+
+&apps-claim CCC=[if([u(findapp,%0)],[u(apps-claim`app,%0)],[u(apps-claim`message`cantfindapp)])]
+
+&apps-claim`app CCC=[setq(playerDbref,[u(getappplayer,%0)])][if([match(None,[u(#1489/getHandler,%q<playerDbref>)])],[u(apps-claim`app`set)],[u(apps-claim`app`replace)])][u(#1489/updateapp,%q<playerDbref>)]
+
+&apps-claim`app`set CCC=[u(#1489/setHandler,%N,%q<playerDbref>)][pemit(%#,You claimed the app for [name(%q<playerDbref>)].)][u(apps-claim`app`set`chargenmsg)]
+
+&apps-claim`app`set`chargenmsg CCC=[u(#1489/chargenchannel`sethandler)]
+
+&apps-claim`app`replace CCC=[pemit(%#,You replace [u(#1489/getHandler,%q<playerDbref>)] as the handler for the App [u(#1489/getJobNo,%q<playerDbref>)]: [name(%q<playerDbref>)].)][u(apps-claim`app`replace`chargenmsg)][u(#1489/setHandler,%N,%q<playerDbref>)]
+
+&apps-claim`app`replace`chargenmsg CCC=[u(#1489/chargenchannel`replace)]
+
+&apps-claim`message`cantfindapp CCC=[pemit(%#,Error - Cannot find a currently active app with that job number.)]
+
+!--
+
+-- command +apps/revise
+//
+This command marks a section of the player's app as requiring revision. It takes two arguments, the app job number and the section as either the room name or number. Note that this doesn't change what the player sees about the status of their app until it is returned.
+
+In:
+	%0 - The job number
+	%1 - Room name or number.
+	
+Out:
+	Marks a section of the app as requiring revisions.
+!//
+
+&cmd_+apps-revise CCC=$+apps/revise *=*:think [u(revise,[secure([decompose(%0)])],[secure([decompose(%1)])])]
+
+!--
+
+-- function revise
+//
+The main run code for the +apps/revise command. Takes the two arguments, the job number and the section to mark as requiring revision.
+
+In:
+	%0 - The job number
+	%1 - Room name or number.
+	
+Registers:
+	sectionNo - The number of the section to mark as requiring revision.
+	playerDbref - Dbref of the character.
+	
+Out:
+	Marks a section of the app as requiring revisions.
+!//
+
+&revise CCC=[if([u(findapp,%0)],[setq(playerDbref,[u(getappplayer,%0)])][u(revise`findsection,%1)][switch([words(%q<sectionNo>)],1,[u(revise`mark)],0,[u(revise`message`cantfindsection)],[u(revise`message`multiple)])],[u(revise`message`cantfindapp)])]
+
+&revise`sectionlist CCC=Personal Information|Character Information|Personality|History|Stats|Skills|Extras
+
+/// Finding sections
+&revise`findsection CCC=[if([isnum(%0)],[u(revise`findsection`checknum,%0)],[u(revise`findsection`checkname,%0)])]
+
+&revise`findsection`checknum CCC=[if([and([lte(%0,8)],[gte(%0,2)])],[setq(sectionNo,%0)])]
+
+&revise`findsection`checkname CCC=[switch([words([setr(sectionNo,[matchall([u(revise`sectionlist)],*%0*,|)])])],1,[setq(sectionNo,[add(%q<sectionNo>,1)])])]
+
+&revise`message`cantfindsection CCC=[pemit(%#,Error - Cannot find that section of the chargen.)]
+
+&revise`message`multiple CCC=[pemit(%#,Error - Multiple chargen sections found with that name.)]
+
+&revise`message`cantfindapp CCC=[u(claim`message`cantfindapp)]
+
+/// Starting to mark
+&revise`mark CCC=[if([match([u(#1489/getRevisions,%q<playerDbref>)],%q<sectionNo>)],[u(revise`mark`toggleoff)],[u(revise`mark`toggleon)])][u(#1489/updateapp,%q<playerDbref>)]
+
+/// Toggle Off
+&revise`mark`toggleoff CCC=[switch([words([u(#1489/getRevisions,%q<playerDbref>)])],1,[u(#1489/setRevisions,,%q<playerDbref>)],[u(#1489/setRevisions,[remove([u(#1489/getRevisions,%q<playerDbref>)],%q<sectionNo>)],%q<playerDbref>)])][u(revise`message`toggleoff)]
+
+&revise`message`toggleoff CCC=[pemit(%#,You cancel the revision for the [elements([u(revise`sectionlist)],[sub(%q<sectionNo>,1)],|)] for [name(%q<playerDbref>)]'s app.)]
+
+/// Toggle On
+&revise`mark`toggleon CCC=[switch([words([u(#1489/getRevisions,%q<playerDbref>)])],0,[u(#1489/setRevisions,%q<sectionNo>,%q<playerDbref>)],[u(#1489/setRevisions,[u(#1489/getRevisions,%q<playerDbref>)] %q<sectionNo>,%q<playerDbref>)])][u(revise`message`toggleon)]
+
+&revise`message`toggleon CCC=[pemit(%#,You mark revision required for the [elements([u(revise`sectionlist)],[sub(%q<sectionNo>,1)],|)] for [name(%q<playerDbref>)]'s app.)]
+!--
+
+-- command +apps
+//
+Lists the current apps that are waiting for admin approval.
+
+Out:
+	A list of apps with their job numbers and if anyone has claimed them.
+!//
+
+&cmd_+apps CCC=$+apps:think [u(apps)]
+
+!--
+
+-- function apps
+//
+Main runcode for the +apps command. Displays a list of apps currently waiting for approval including their job number and which admin has claimed it.
+
+Registers:
+	submitted - A list of data about apps submitted
+	revising - A list of data about apps revising
+	incomplete - A list of data about apps that are incomplete
+
+Out:
+	A list of apps with their job numbers and if anyone has claimed them.
+!//
+
+&apps CCC=[pemit(%#,[u(apps`beginning)][u(apps`middle)]%r[u(apps`end)])]
+
+&apps`beginning CCC=[header(Waiting Character Apps)]%r[align([u(apps`align)],[ansi(bh,|)],[ansi([u(#1489/global`color`appstitle)],Job#)],[ansi([u(#1489/global`color`appstitle)],Char Name)],[ansi([u(#1489/global`color`appstitle)],Admin)],[ansi([u(#1489/global`color`appstitle)],Last Updated)],[ansi(bh,|)])]
+
+&apps`align CCC=1. 5 20 20 26 1.
+
+&apps`middle CCC=[null([iter([lattr(#1489/db`*)],[u(apps`middle`check,[after(%i0,`)])])])][u(apps`middle`submitted)][u(apps`middle`revising)][u(apps`middle`incomplete)]
+
+&apps`middle`check CCC=[switch([u(#1489/getStatus,%0)],S,[setq(submitted,%q<submitted>[if(%q<submitted>,%r)][u(apps`display,%0)])],NS,[setq(incomplete,%q<incomplete>[if(%q<incomplete>,%r)][u(apps`display,%0)])],R,[setq(revising,%q<revising>[if(%q<revising>,%r)][u(apps`display,%0)])])]
+
+&apps`display CCC=[align([u(apps`align)],[ansi(bh,|)],[u(#1489/getJobNo,%0)],[name(%0)],[u(#1489/getHandler,%0)],[trim([timestring([sub([secs()],[u(#1489/getUpdate,%0)])])])],[ansi(bh,|)])]
+
+&apps`middle`submitted CCC=[if(%q<submitted>,%r[sep([ansi(yh,Awaiting Approval)])]%r%q<submitted>)]
+
+&apps`middle`revising CCC=[if(%q<revising>,%r[sep([ansi(yh,Revising)])]%r%q<revising>)]
+
+&apps`middle`incomplete CCC=[if(%q<incomplete>,%r[sep([ansi(yh,Incomplete)])]%r%q<incomplete>)]
+
+&apps`end CCC=[sep()]
+
+!--
+
+-- command +apps #
+//
+An extension of the +apps command that displays specific information about the selected app. Primarily this is the basic information seen in +apps combined with admin-specific notes about the app and any pending revisions.
+
+In:
+	%0 - The job # to view
+
+Out:
+	Basic information about the app as well as any admin notes on it.
+!//
+
+&cmd_+apps-view CCC=$+apps *:think [u(apps-view,[secure([decompose(%0)])])]
+
+!--
+
+-- function apps-view
+//
+The main run code for the +apps # command. The argument is the job number of the app to view.
+
+In:
+	%0 - The job # to view
+
+Out:
+	Basic information about the app as well as any admin notes on it.
+!//
+
+&apps-view CCC=[if([u(findapp,%0)],[u(apps-view`run)],[u(apps-view`message`appnotfound)])]
+
+&apps-view`run CCC=[pemit(%#,[u(apps-view`run`basic)]%r[u(apps-view`run`basic`status)]%r[u(apps-view`run`basic`notes)])]
+
+&apps-view`run`basic CCC=[header([name(%q<playerDbref>)]'s App Status)]%r[u(apps-view`run`basic`line1)]%r[u(apps-view`run`basic`line2)]%r[u(apps-view`run`basic`line3)]
+
+&apps-view`run`basic`line1 CCC=[align([u(apps-view`run`alignnumbers)],[ansi(bh,|)],[ansi([u(globals`color`header)],Name:)] [name(%q<playerDbref>)],[ansi([u(globals`color`header)],Updated:)] [timefmt([u(apps-view`run`timefmt)],[u(#1489/getUpdate,%q<playerDbref>)])],[ansi(bh,|)])]
+
+&apps-view`run`basic`line2 CCC=[align([u(apps-view`run`alignnumbers)],[ansi(bh,|)],[ansi([u(globals`color`header)],Status:)] [switch([u(#1489/getStatus,%q<playerDbref>)],S,[u(#1489/desc`message`appsubmitted)],R,[u(#1489/desc`message`revisionsrequired)],NS,[u(#1489/desc`message`appnotsubmitted)])],[ansi([u(globals`color`header)],Handler:)] [u(#1489/getHandler,%q<playerDbref>)],[ansi(bh,|)])]
+
+&apps-view`run`basic`line3 CCC=[align(1. 74 1.,[ansi(bh,|)],[ansi([u(globals`color`header)],Pending Revisions:)] [itemize([iter([u(#1489/getRevisions,%q<playerDbref>)],[elements(Blank|Personal Information|Character Information|Personality|History|Stats|Skills|Extras,%i0,|,|)],%b,|)],|)],[ansi(bh,|)])]
+
+&apps-view`run`basic`status CCC=[align(1. 74 1.,[ansi(bh,|)],[ansi([u(globals`color`header)],Sections:)]%r[iter([lnum(2,8)],[u(#1489/app`display`room%i0)],%b,%r)],[ansi(bh,|)]
+
+&apps-view`run`basic`notes CCC=[sep([ansi([u(globals`color`header)],Admin Notes)])]%r[align(1. 74 1.,[ansi(bh,|)],[u(#1489/getNotes,%q<playerDbref>)],[ansi(bh,|)])]%r[sep()]
+
+&globals`color`header CCC=yh
+
+&apps-view`run`alignnumbers CCC=1. 36 37 1.
+
+&apps-view`run`timefmt CCC=$H:$M $d $b
+
+&apps-view`message`appnotfound CCC=[u(apps-note`message`appnotfound)]
+
+!--
+
+-- command +apps/note
+//
+The note switch for apps allows admin to set a note on the app that is only viewable by other admin. It has two arguments, the first being the job # to set to, the second is the actual note.
+
+In:
+	%0 - Job #
+	%1 - Note to set
+	
+Out:
+	Sets the note on the app for other admin to view in +apps #
+!//
+
+&cmd_+apps-note CCC=$+apps/note *=*:think [u(apps-note,[secure([decompose(%0)])],%1)]
+
+!--
+
+-- function apps-note
+//
+The main run code for +apps/note. Takes the job number and note and sets it on the app for view by other admin in +apps #
+
+In:
+	%0 - Job #
+	%1 - Note to set
+	
+Registers:
+	playerDbref - Player dbref for the corresponding app # since that's how most of the app is referenced.
+	
+Out:
+	Sets the note on the app for other admin to view in +apps #
+!//
+
+&apps-note CCC=[if([u(apps-note`findapp,%0)],[u(apps-note`add,%1)],[u(apps-note`message`appnotfound)])]
+
+&apps-note`findapp CCC=[u(findapp,%0)]
+
+&apps-note`message`appnotfound CCC=[pemit(%#,Error - Cannot find an active application with that job number.)]
+
+&apps-note`add CCC=[u(#1489/updateapp,%q<playerDbref>)][u(#1489/setNotes,%N - [timefmt([u(apps-view`run`timefmt)],secs())]: %0,%q<playerDbref>)][u(apps-note`message`added,%0)][u(apps-note`chargenmsg)]
+
+&apps-note`message`added CCC=[pemit(%#,You add the following note to [name(%q<playerDbref>)]'s app: %0)]
+
+&apps-note`chargenmsg CCC=[u(#1489/chargenchannel`note)]
+!--
+
+-- command +apps/view
+//
+Different to +apps #, this views an individual section of the app. It takes two arguments, the app job number and the section to view. The latter can be either a number or the name of the section.
+
+In:
+	%0 - App to view
+	%1 - Section to view either as name or number
+	
+Out:
+	A display of the specific section of the app.
+!//
+
+&cmd_+apps-viewsection CCC=$+apps/view *=*:think [u(apps-viewsection,[secure([decompose(%0)])],[secure([decompose(%1)])])]
+
+!--
+
+-- function apps-viewsection
+//
+Main run code for +apps/view. It takes two arguments, the app job number and the section to view. The latter can be either a number or the name of the section.
+
+In:
+	%0 - App to view
+	%1 - Section to view either as name or number
+	
+Registers:
+	playerDbref - Dbref of the player whos app is being checked.
+	sectionNo - Section/Room number to view
+	sectionDbref - Dbref of the room related to the section
+	
+Out:
+	A display of the specific section of the app.
+!//
+
+&apps-viewsection CCC=[if([u(apps-viewsection`findapp,%0)],[u(revise`findsection,%1)][switch([words(%q<sectionNo>)],1,[u(apps-viewsection`display)],0,[u(revise`message`cantfindsection)],[u(revise`message`multiple)])],[u(apps-note`message`appnotfound)])]
+
+&apps-viewsection`findapp CCC=[u(findapp,%0)]
+
+&apps-viewsection`roomdbreflist CCC=blank #1494 #1497 #1503 #1501 #1509 #1511 #1488
+
+&apps-viewsection`display CCC=[setq(sectionDbref,[elements([u(apps-viewsection`roomdbreflist)],%q<sectionNo>)])][u(apps-viewsection`display`main)]
+
+&apps-viewsection`display`header CCC=[header([name(%q<playerDbref>)]'s [elements([u(revise`sectionlist)],[sub(%q<sectionNo>,1)],|)] Section)]
+
+&apps-viewsection`display`footer CCC=[sep()]
+
+&apps-viewsection`display`main CCC=[pemit(%#,[u(apps-viewsection`display`header)]%r[align(1. 74 1.,[ansi(bh,|)],[u(apps-viewsection`display`%q<sectionNo>)],[ansi(bh,|)])]%r[sep()]
+
+&apps-viewsection`display`2 CCC=[u(%q<sectionDbref>/desc`new)]%r%r[u(%q<sectionDbref>/desc`yesno`display)]
+
+&apps-viewsection`display`3 CCC=[u(%q<sectionDbref>/desc`charinfo)]
+
+&apps-viewsection`display`4 CCC=[u(#1489/getRoom4Personality,%q<playerDbref>)]
+
+&apps-viewsection`display`5 CCC=[u(%q<sectionDbref>/desc`history)]
+
+&apps-viewsection`display`6 CCC=[u(%q<sectionDbref>/desc`stats)]
+
+&apps-viewsection`display`7 CCC=[u(%q<sectionDbref>/desc`skills)]
+
+&apps-viewsection`display`8 CCC=[u(%q<sectionDbref>/desc`extras)]
+
+!--
+
+-- command +apps/viewhistory
+//
+Necessary secondary command to view the individual pages of the history section. Takes two arguments, the app number and the history page number.
+
+In:
+	%0 - App job number
+	%1 - Page of the history section to view
+
+Out:
+	The requested page of the history section.
+!//
+
+&cmd_+apps-viewhistory CCC=$+apps/viewhistory *=?:think [u(apps-viewhistory,[secure([decompose(%0)])],[secure([decompose(%1)])])]
+
+!--
+
+-- function apps-viewhistory
+//
+Main runcode for +apps/viewhistory. Takes two arguments, the app number and the history page number. Returns that full section of the history.
+
+In:
+	%0 - App job number
+	%1 - Page of the history section to view
+	
+Registers:
+	playerDbref - Dbref of the player whos app is being checked.
+
+Out:
+	The requested page of the history section.
+!//
+
+&apps-viewhistory CCC=[if([u(apps-viewhistory`findapp,%0)],[if([u(apps-viewhistory`validpage,%1)],[pemit(%#,[u(apps-viewhistory`display`header,%1)]%r[u(apps-viewhistory`display`page,%1)]%r[u(apps-viewhistory`display`footer)])],[u(apps-viewhistory`message`invalidpage)])],[u(apps-note`message`appnotfound)])]
+
+&apps-viewhistory`findapp CCC=[u(findapp,%0)]
+
+&apps-viewhistory`validpage CCC=[cand([isnum(%0)],[gte(%0,1)],[lte(%0,9)])]
+
+&apps-viewhistory`display`header CCC=[header([name(%Q<playerDbref>)]'s History Page %0)]
+
+&apps-viewhistory`display`page CCC=[align(1. 74 1.,[ansi(bh,|)],[u(#1489/getRoom5History,%0,%q<playerDbref>)],[ansi(bh,|)])]
+
+&apps-viewhistory`display`footer CCC=[sep()]
+
+&apps-viewhistory`message`invalidpage CCC=[pemit(%#,Error - Invalid page number. Please use 1 - 9)]
+
+!--
+
+-- command +apps/return
+//
+This command 'returns' the player's app, usually because there's something wrong with it. It takes two arguments, the app job number to return and the reason for the return.
+
+In:
+	%0 - The app job number to return.
+	%1 - The reason for the return.
+
+Out:
+	Sets the app status to Revisions Required, along with marking those sections requiring revisions. @mails the player including the reason why the app was returned. Adds the reason to the admin notes on the app.
+!//
+
+&cmd_+apps-return CCC=$+apps/return *=*:think [u(apps-return,[secure([decompose(%0)])],%1)]
+
+!--
+
+-- function +apps-return
+//
+Main runcode for the +apps/return command. It takes two arguments, the app job number to return and the reason for the return. The reason will be @mailed to the player and also added to the app as an admin note.
+
+In:
+	%0 - The app job number to return.
+	%1 - The reason for the return.
+	
+Registers:
+	playerDbref - Dbref of player whos app is being returned
+
+Out:
+	Sets the app status to Revisions Required, along with marking those sections requiring revisions. @mails the player including the reason why the app was returned. Adds the reason to the admin notes on the app.
+!//
+
+&apps-return CCC=[if([u(apps-return`findapp,%0)],[if([u(apps-return`validapp)],[u(apps-return`run,%1)],[u(apps-return`message`notsubmitted)])],[u(apps-note`message`appnotfound)])]
+
+&apps-return`findapp CCC=[u(findapp,%0)]
+
+&apps-return`validapp CCC=[switch([u(#1489/getStatus,%q<playerDbref>)],S,1,0)]
+
+&apps-return`message`notsubmitted CCC=[pemit(%#,Error - That app has not been submitted and so is not ready to be returned.)]
+
+/// %0 - Reason
+&apps-return`run CCC=[u(#1489/updateapp,%q<playerDbref>)][u(apps-return`sendmail,%0)][u(apps-return`addnote,%0)][u(apps-return`message)][u(apps-return`announce)][u(apps-return`updateapp)]
+
+&apps-return`updateapp CCC=[u(#1489/setStatus,R,%q<playerDbref>)][if([u(#1489/hasRevisions,%q<playerDbref>)],[iter([u(#1489/getRevisions,%q<playerDbref>)],[u(#1489/setRoom%i0Status,R,%q<playerDbref>)])])][u(#1489/setRevisions,,%q<playerDbref>)]
+
+&apps-return`sendmail CCC=[mailsend(%q<playerDbref>,App Returned/Your app has been returned for the following reason:%r%0[if([u(#1489/hasRevisions,%q<playerDbref>)],%r%rYou must revise the following sections:%r[iter([sort([u(#1489/getRevisions,%q<playerDbref>)])],[switch(%i0,2,Room 2 - Personal Information,3,Room 3 - Character Information,4,Room 4 - Personality,5,Room 5 - History,6,Room 6 - Stats,7,Room 7 - Skills,8,Room 8 - Extras)],%b,%r)])])]
+
+&apps-return`message CCC=[pemit(%#,You return [name(%Q<playerDbref>)]'s app for revisions.)]
+
+&apps-return`addnote CCC=[u(#1489/setNotes,%N Returned App - [timefmt([u(apps-view`run`timefmt)],secs())]: %0,%q<playerDbref>)]
+
+&apps-return`announce CCC=[u(#1489/chargenchannel`return)]
+
+!--
+
+-- command +apps/approve
+//
+Approves the given app. This involves altering the player's charbit for IC and archiving the app. The charbit setup primarily involves applying stats, skills, faction and some character information. The archiving process simply removes the app from the active app list and puts it in the archive object.
+
+In:
+	%0 - App job number.
+	
+Out:
+	Archives App
+	Sets charbit data and marks them as approved.
+!//
+
+&cmd_+apps-approve CCC=$+apps/approve *:think [u(apps-approve,[secure([decompose(%0)])])];@switch %q<faction>=2,@fo %q<playerDbref>=@channel/on 1-AUN,2,@fo %q<playerDbref>=@channel/on 2-AUN,2,@fo %q<playerDbref>=@channel/on 3-AUN,2,@fo %q<playerDbref>=@channel/on 4-AUN,2,@fo %q<playerDbref>=@channel/on 5-AUN,2,@fo %q<playerDbref>=@channel/on O-AUN,3,@fo %q<playerDbref>=@channel/on 1-Merc,3,@fo %q<playerDbref>=@channel/on 2-Merc,3,@fo %q<playerDbref>=@channel/on 3-Merc,3,@fo %q<playerDbref>=@channel/on O-Merc,4,@fo %q<playerDbref>=@channel/on O-Civvy,5,@fo %q<playerDbref>=@channel/on 1-UN,5,@fo %q<playerDbref>=@channel/on 2-UN,5,@fo %q<playerDbref>=@channel/on 3-UN,5,@fo %q<playerDbref>=@channel/on 4-UN,5,@fo %q<playerDbref>=@channel/on 5-UN,5,@fo %q<playerDbref>=@channel/on O-UN,6,@fo %q<playerDbref>=@channel/on 1-Pir,6,@fo %q<playerDbref>=@channel/on 2-Pir,6,@fo %q<playerDbref>=@channel/on 3-Pir,6,@fo %q<playerDbref>=@channel/on O-Pir
+
+!--
+
+-- function apps-approve
+//
+Main runcode for +apps/approve. First runs through setting up the character, then archives the apps.
+
+In:
+	%0 - App job number.
+	
+Registers:
+	playerDbref - Dbref of the player whos app is being approved.
+	
+Out:
+	Archives App
+	Sets charbit data and marks them as approved.
+!//
+
+&apps-approve CCC=[if([u(apps-approve`findapp,%0)],[if([u(apps-approve`validapp)],[u(apps-approve`setup)][u(apps-approve`mail)][u(apps-approve`chargenmsg)][u(apps-approve`archive)],[pemit(%#,Error - An app must be Submitted to be approved.)][unsetq(playerDbref)])],[u(apps-note`message`appnotfound)][unsetq(playerDbref)])]
+
+&apps-approve`findapp CCC=[u(findapp,%0)]
+
+&apps-approve`validapp CCC=[switch([u(#1489/getStatus,%q<playerDbref>)],S,1,0)]
+
+&apps-approve`mail CCC=[mailsend(%q<playerDbref>,Approved/Congratulations! Your character has been approved to go IC!%r%rPlease remember to set a @desc and your @sex. Channels appropriate to your faction have already been turned on. Check @chan/list for other channels you may wish to join.%r%rEnjoy your time here!)]
+
+&apps-approve`chargenmsg CCC=[u(#1489/chargenchannel`approve)]
+
+&apps-approve`archive CCC=[tel([u(#1489/getapp,%q<playerDbref>)],[get(#1489/archive)])][attrib_set(#1489/db`%q<playerDbref>)]
+!--
+
+-- function apps-approve`setup
+//
+Separated from apps-approve due to size. Needs to set up the character so that it is ready for IC. This includes applying stats, skills, faction info and character info.
+
+Registers In:
+	playerDbref - Dbref of the player who is being set up.
+
+Registers:
+	faction - Faction number the player is being added to.
+
+Out:
+	Character is ready for IC.
+!//
+
+&apps-approve`setup CCC=[u(apps-approve`setup`stats)][u(apps-approve`setup`skills)][u(apps-approve`setup`faction)][u(apps-approve`setup`char)][u(apps-approve`setup`final)]
+
+&apps-approve`setup`stats CCC=[iter([lattr([u(#1489/getapp,%q<playerDbref>)]/room6`???)],[attrib_set(%q<playerDbref>/[switch([last(%i0,`)],DEX,XY`2,END,XY`3,INT,XY`4,LCK,XY`6,SPI,XY`5,STR,XY`1)],[u(#1489/getRoom6Stat,[last(%i0,`)],%q<playerDbref>)])][attrib_set(%q<playerDbref>/[switch([last(%i0,`)],DEX,XY`2`c,END,XY`3`c,INT,XY`4`c,LCK,XY`6`c,SPI,XY`5`c,STR,XY`1`c)],[u(#1489/getRoom6Stat,[last(%i0,`)],%q<playerDbref>)])])]
+
+&apps-approve`setup`skills CCC=[iter([lattr([u(#1489/getapp,%q<playerDbref>)]/room7`xy`*)],[attrib_set(%q<playerDbref>/[right(%i0,6)],[u(#1489/getRoom7Skill,[right(%i0,6)],%q<playerDbref>)])][attrib_set(%q<playerDbref>/[right(%i0,6)]`c,[u(#1489/getRoom7Skill,[right(%i0,6)],%q<playerDbref>)])])]
+
+&apps-approve`setup`faction CCC=[setq(faction,[u(apps-approve`setup`faction`[u(#1489/getRoom3Faction,%q<playerDbref>)])])][if([match([get(#983/fac.%q<faction>`members)],%q<playerDbref>,|)],,[u(apps-approve`setup`faction`mem_faction)][u(apps-approve`setup`faction`members)][u(apps-approve`setup`faction`positions)][u(apps-approve`setup`faction`alias)])]
+
+&apps-approve`setup`faction`mem_faction CCC=[attrib_set(%q<playerDbref>/mem_faction,%q<faction>)][atrlock(%q<playerDbref>/mem_faction,on)][set(%q<playerDbref>/mem_faction,hidden)]
+
+&apps-approve`setup`faction`members CCC=[attrib_set(#983/fac.%q<faction>`members,[if([hasattrval(#983,fac.%q<faction>`members)],[get(#983/fac.%q<faction>`members)]|%q<playerDbref>,%q<playerDbref>)])]
+
+&apps-approve`setup`faction`positions CCC=[attrib_set(#983/fac.%q<faction>`positions,[if([hasattrval(#983,fac.%q<faction>`positions)],[get(#983/fac.%q<faction>`positions)]|None,None)])]
+
+&apps-approve`setup`faction`alias CCC=[attrib_set(#983/fac.%q<faction>`alias,[if([hasattrval(#983,fac.%q<faction>`alias)],[get(#983/fac.%q<faction>`alias)]|[u(#1489/getRoom3Rank,%q<playerDbref>)],[u(#1489/getRoom3Rank,%q<playerDbref>)])])]
+
+&apps-approve`setup`faction`AUN CCC=2
+&apps-approve`setup`faction`Merc CCC=3
+&apps-approve`setup`faction`Civvy CCC=4
+&apps-approve`setup`faction`UN CCC=5
+&apps-approve`setup`faction`Pir CCC=6
+
+&apps-approve`setup`char CCC=[iter(ctype fullname dob race function wealth quote profile,[u(apps-approve`setup`char`%i0)])]
+
+&apps-approve`setup`char`ctype CCC=[attrib_set(%q<playerDbref>/ct,[u(#1489/getRoom3CType,%q<playerDbref>)])][atrlock(%q<playerDbref>/ct,on)][set(%q<playerDbref>/ct,hidden)]
+
+&apps-approve`setup`char`fullname CCC=[attrib_set(%q<playerDbref>/fullname,[u(#1489/getRoom3Fullname,%q<playerDbref>)])][atrlock(%q<playerDbref>/fullname,on)][set(%q<playerDbref>/fullname,hidden)]
+
+&apps-approve`setup`char`dob CCC=[attrib_set(%q<playerDbref>/dob,[u(#1489/getRoom3DOB,%q<playerDbref>)])][atrlock(%q<playerDbref>/dob,on)][set(%q<playerDbref>/dob,hidden)]
+
+&apps-approve`setup`char`race CCC=[attrib_set(%q<playerDbref>/race,[u(#1489/getRoom3Race,%q<playerDbref>)])][atrlock(%q<playerDbref>/race,on)][set(%q<playerDbref>/race,hidden)]
+
+&apps-approve`setup`char`function CCC=[attrib_set(%q<playerDbref>/function,[u(#1489/getRoom3Function,%q<playerDbref>)])][atrlock(%q<playerDbref>/function,on)][set(%q<playerDbref>/function,hidden)]
+
+&apps-approve`setup`char`wealth CCC=[attrib_set(%q<playerDbref>/ic_wealth,[before([u(#1489/getRoom3Wealth,%q<playerDbref>)],:)])][atrlock(%q<playerDbref>/ic_wealth,on)][set(%q<playerDbref>/ic_wealth,hidden)]
+
+&apps-approve`setup`char`quote CCC=[attrib_set(%q<playerDbref>/quote,[u(#1489/getRoom3Quote,%q<playerDbref>)])][atrlock(%q<playerDbref>/quote,on)][set(%q<playerDbref>/quote,hidden)]
+
+&apps-approve`setup`char`profile CCC=[attrib_set(%q<playerDbref>/profile,[u(#1489/getRoom3Profile,%q<playerDbref>)])][atrlock(%q<playerDbref>/profile,on)][set(%q<playerDbref>/profile,hidden)]
+
+&apps-approve`setup`final CCC=[u(#1489/setStatus,A)][set(%q<playerDbref>,approved)][attrib_set(%q<playerDbref>/icloc,#446)][atrlock(%q<playerDbref>/icloc,on][set(%q1/icloc,hidden)]
+!--
+
+-- command +apps/unarchive
+//
+This command allows admin to take an app from the archive and put it back into place in the chargen. Useful for when a player lets their app time out and wishes to return. It takes just the one argument, the dbref of the object representing the character's app.
+
+In:
+	%0 - Dbref of app to unarchive
+Out:
+	Returns app into the chargen process
+!//
+
+&cmd_apps-unarchive CCC=$+apps/unarchive *:think [u(apps-unarchive,[secure([decompose(%0)])])]
+
+!--
+
+-- function apps-unarchive
+//
+Main runcode for +apps/unarchive. Needs to tel the app back to the chargen code object, then add it into the db on said object, change status to incomplete if Approved.
+
+In:
+	%0 - Dbref of app to unarchive
+
+Registers:
+	playerDbref - Dbref of the player for use in modifying the app.
+
+Out:
+	Returns app into the chargen process
+!//
+
+&apps-unarchive CCC=[if([cand([isdbref(%0)],[hasattrval(%0,dbref)])],[u(apps-unarchive`tel,%0)][u(apps-unarchive`addtodb,%0)][u(apps-unarchive`changestatus)][u(apps-unarchive`notice)],[pemit(%#,Error - That is an invalid app object. Please recheck the dbref.)])]
+
+&apps-unarchive`tel CCC=[tel(%0,#1489)]
+
+&apps-unarchive`addtodb CCC=[u(#1489/increasejobcount)][attrib_set(#1489/db`[setr(playerDbref,[get(%0/dbref)])],[u(#1489/getjobcount)]|%0|[secs()])][attrib_set([u(#1489/getapp,%q<playerDbref>)]/jobno,[u(#1489/getjobcount)])]
+
+&apps-unarchive`changestatus CCC=[switch([u(#1489/getStatus,%q<playerDbref>)],NS,,R,,[u(#1489/setStatus,R,%q<playerDbref>)][set(%q<playerDbref>,!approved)])]
+
+&apps-unarchive`notice CCC=[u(#1489/chargenchannel`unarchive)]
+
+!--

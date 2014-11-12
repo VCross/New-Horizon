@@ -1,0 +1,60 @@
+Filename: +app
+Date: October 2014
+Programmer: Vincent Cross
+
+Purpose:
+
+This file contains the code to run +app. This command is only available in the chargen area and is used to examine the status of the player's app. It is set on the Chargen Room Parent so that it's available to all chargen rooms.
+
+The command will display the overall status of the app, followed by the status of each individual section.
+
+Example Layout...
+
+App Status: Returned (#dbref`status)
+
+Room 2 - Personal Information: Complete (#dbref`room2`status)
+Room 3 - Character Information: Complete (#dbref`room3`status)
+Room 4 - Personality: Revisions Required (#dbref`room4`status)
+Room 5 - History: Complete (#dbref`room5`status)
+Room 6 - Stats: Complete (#dbref`room6`status)
+Room 7 - Skills: Revisions Required (#dbref`room7`status)
+Room 8 - Extras: Complete (#dbref`room8`status)
+
+-- command +app
+//
+This command is accessible from all the chargen rooms. It displays the status of the app as per the above format.
+!//
+
+&cmd_+app Chargen Room Parent=$+app:think [pemit(%#,[u(#1489/app)])]
+
+!--
+
+-- function app
+//
+This is the main run code for the +app command available to all chargen rooms. It has one optional argument, the dbref of the player whos app is being checked.
+
+In:
+	%0 - Optional. Dbref of the player whos status is being checked.
+	
+Registers:
+	playerDbref - Dbref of the player whos status is being checked. Defaults to %#
+
+Out:
+	A formatted display of the current player's app's status.
+!//
+
+&app #1489=[setq(playerDbref,[if(%0,%0,%#)])][u(app`display`overall)]%r%r[iter([lnum(2,8)],[u(app`display`room%i0)],%b,%r)]
+
+&app`display`overall #1489=App Status: [if([hasflag(%q<playerDbref>,approved)],[u(desc`message`alreadyapproved)],[switch([u(getStatus)],NS,[u(desc`message`appnotsubmitted)],S,[u(desc`message`appsubmitted)],R,[u(desc`message`appreturned)],A,[u(desc`message`appapproved)])])]
+
+&app`display`room2 #1489=Room 2 - Personal Information: [u(app`display`status,2)]
+&app`display`room3 #1489=Room 3 - Character Information: [u(app`display`status,3)]
+&app`display`room4 #1489=Room 4 - Personality: [u(app`display`status,4)]
+&app`display`room5 #1489=Room 5 - History: [u(app`display`status,5)]
+&app`display`room6 #1489=Room 6 - Stats: [u(app`display`status,6)]
+&app`display`room7 #1489=Room 7 - Skills: [u(app`display`status,7)]
+&app`display`room8 #1489=Room 8 - Extras: [u(app`display`status,8)]
+
+&app`display`status #1489=[if([hasflag(%q<playerDbref>,approved)],[u(desc`message`alreadyapproved)],[switch([u(getRoom%0Status,%q<playerDbref>)],I,[u(#1489/desc`message`appincomplete)],C,[u(#1489/desc`message`complete)],R,[u(#1489/desc`message`revisionsrequired)])])]
+
+!--

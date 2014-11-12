@@ -1,0 +1,134 @@
+Filename: Room 8 - Extras
+Date: October 2014
+Programmer: Vincent Cross
+
+Purpose:
+
+This room is the last parts of the chargen process and basically just covers any extra information about equipment, or any relavent notes that the player might want to include.
+
+- Equipment (room8`equip)
+- Extra Notes (room8`notes)
+
+- Section status?  C - Complete, I - Incomplete, R - Revisions Required (room8`status)
+    
+Chargen Code: #1489
+Generic Room Parent: #333
+
+-- Room Creation
+//
+This section contains the code necessary to create the room. It is expected to be performed from Room 7.
+!//
+
+@dig Chargen 8 - Extras=Next;n;next,Back;b;back
+N
+@parent here=Chargen Room Parent
+@set here=!no_command
+@set here=wizard
+@power here=see_all
+@desc here=You're almost finished! Now we just need to cover any extra information you might need to include as part of your app. If you have nothing to add, just simply enter 'None' or something to that effect.%r%rIf you require specialty equipment of some manner please include it here. VFs, a new room added to the grid (not player housing), etc. You can use the following command to request the equipment:%r%r'[ansi([u(#1489/desc`color`cmd)],+equip <request text>)]'%r'[ansi([u(#1489/desc`color`cmd)],+equip)]' - Returns what's currently stored.%r%rFinally, if there's anything extra you'd like to note about your character, please include it with:%r%r'[ansi([u(#1489/desc`color`cmd)],+note <extra notes>)]'%r'[ansi([u(#1489/desc`color`cmd)],+note)]' - Returns what's currently stored.%r%r[u(desc`status)]%r%r[u(desc`extras)]
+@lock/command here=checklock/1
+&checklock here=[cand([not([u(approved)])],[if([u(#1489/getapp)],1,0)],[switch([u(#1489/getStatus)],S,0,1)])]
+&approved here=[hasflag(%#,approved)]
+!--
+
+-- Descriptions
+//
+This section handles the description of the room and what is displayed about the current app's status.
+!//
+
+/// Displays the current status of this room.
+&desc`status here=[setq(playerDbref,%#)][u(#1489/desc`message`currentstatus)][if([hasflag(%q<playerDbref>,approved)],[u(#1489/desc`message`alreadyapproved)],[switch([u(#1489/getStatus,%q<playerDbref>)],NS,[u(desc`status`editable)],S,[u(#1489/desc`message`appsubmitted)],R,[u(desc`status`editable)])])]
+
+&desc`status`editable here=[switch([u(#1489/getRoom8Status,%q<playerDbref>)],I,[u(#1489/desc`message`appincomplete)],C,[u(#1489/desc`message`complete)],R,[u(#1489/desc`message`revisionsrequired)])]
+
+/// Displays the extra information sections
+&desc`extras here=[u(desc`extras`equip)]%r%r[u(desc`extras`notes)]
+
+&desc`extras`equip here=[ansi([u(#1489/desc`color`question)],Requested Equipment:)]%r[if([hasflag(%q<playerDbref>,approved)],[u(#1489/desc`message`alreadyapproved)],[if([u(#1489/hasRoom8Equip,%q<playerDbref>)],[u(#1489/getRoom8Equip,%q<playerDbref>)],[u(#1489/desc`message`appincomplete)])])]
+
+&desc`extras`notes here=[ansi([u(#1489/desc`color`question)],Additional Notes:)]%r[if([hasflag(%q<playerDbref>,approved)],[u(#1489/desc`message`alreadyapproved)],[if([u(#1489/hasRoom8Notes,%q<playerDbref>)],[u(#1489/getRoom8Notes,%q<playerDbref>)],[u(#1489/desc`message`appincomplete)])])]
+!--
+
+-- command +equip
+//
+This command records the player's requested special equipment for their character.
+
+In:
+	%0 - The text describing their request.
+	
+Out:
+	room8`equip - The attribute to set.
+!//
+
+&cmd_+equip here=$+equip *:think [u(#1489/room8`equip,%0)];think [u(checkstatus)]
+
+&cmd_+equip-view here=$+equip:think [u(#1489/room8`equip`view,%0)]
+
+!--
+
+-- function equip
+//
+The main code to run the +equip command.
+
+In:
+	%0 - The text describing their request.
+
+Out:
+	room8`equip - The attribute to set.
+!//
+
+&room8`equip #1489=[u(#1489/setRoom8Equip,%0)][u(message`8`equipset)][u(updateapp,%#)]
+
+&message`8`equipset #1489=[pemit(%#,You put in a request for special equipment.)]
+
+&room8`equip`view #1489=[if([u(hasRoom8Equip)],[pemit(%#,You have entered:%r[u(getRoom8Equip)])],[pemit(%#,None entered.)])]
+
+!--
+
+-- command +note
+//
+This command records the player's additional notes for their character.
+
+In:
+	%0 - The text of their notes.
+	
+Out:
+	room8`notes - The attribute to set.
+!//
+
+&cmd_+note here=$+note *:think [u(#1489/room8`note,%0)];think [u(checkstatus)]
+
+&cmd_+note-view here=$+note:think [u(#1489/room8`note`view,%0)]
+
+!--
+
+-- function note
+//
+The main code to run the +note command.
+
+In:
+	%0 - The text of their notes.
+	
+Out:
+	room8`notes - The attribute to set.
+!//
+
+&room8`note #1489=[u(#1489/setRoom8Notes,%0)][u(message`8`notesset)][u(updateapp,%#)]
+
+&message`8`notesset #1489=[pemit(%#,You add additional notes about your character.)]
+
+&room8`note`view #1489=[if([u(hasRoom8Notes)],[pemit(%#,You have entered:%r[u(getRoom8Notes)])],[pemit(%#,None entered.)])]
+!--
+
+-- function checkstatus
+//
+The code in this function involves checking the status of this room to see if it can be considered complete or not. This information is stored in room8`status as C - Complete, I - Incomplete or R - Revisions Required.
+
+Out:
+	room7`status - Changes this between C/I/R depending upon the status of the questions.
+!//
+
+&checkstatus here=[if([and([u(#1489/hasRoom8Equip)],[u(#1489/hasRoom8Notes)])],[switch([u(#1489/getRoom8Status)],I,[u(#1489/setRoom8Status,C)][pemit(%#,[u(#1489/message`sectioncomplete)])],R,[u(#1489/setRoom8Status,C)][pemit(%#,[u(#1489/message`sectioncomplete)])])])]
+
+!--
+

@@ -9,7 +9,7 @@ A master list of attributes that make up the new Chargen database.
 -- Basic
 
 #1489/db`%# - Contains the dbref of the relevant app object and the date the application was last active.
-status - The overall status of the application. NS: Not submitted, S: Submitted, R: Returned, A: Approved
+#dbref`status - The overall status of the application. NS: Not submitted, S: Submitted, R: Returned, A: Approved
 
 !--
 
@@ -53,5 +53,27 @@ room4`personality - Contains the personality.
 
 room5`status - The status for the individual section. C: Complete, I: Incomplete, R: Revisions Required
 room5`history`# - Contains the history on separate pages up to page 9.
+
+!--
+
+-- Room 6 - Stats
+
+room6`status - The status for the individual section. C: Complete, I: Incomplete, R: Revisions Required
+room6`stat`xy`? - Contains the set value for each of the player stats,
+
+!--
+
+-- Room 7 - Skills
+
+room7`status - The status for the individual section. C: Complete, I: Incomplete, R: Revisions Required
+room7`skill`xy`? - Contains the set value for each of the player stats,
+
+!--
+
+-- Room 8 - Extras
+
+room8`status - The status for the individual section. C: Complete, I: Incomplete, R: Revisions Required
+room8`equip - Information about any extra equipment they need.
+room8`notes - Information about any additional notes about their character.
 
 !--

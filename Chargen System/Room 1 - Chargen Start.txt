@@ -20,15 +20,18 @@ Generic Room Parent: #333
 
 --Room Creation
 //
-This section contains the code necessary to create the room. It is expected to be performed from the hub of the OOC Nexus, or wherever the chargen will start from.
+This section contains the code necessary to create the room. It is expected to be performed from the hub of the OOC Nexus, or wherever the chargen will start from. It also includes the code to create the chargen room parent.
 !//
+
+@create Chargen Room Parent
+@parent Chargen Room Parent=#333
 
 @dig Chargen 1 - Start=Chargen Start;cs;chargen;start;chargen start,Back;b;back
 CS
-@parent here=#333
+@parent here=Chargen Room Parent
 @set here=!no_command
 @set here=wizard
-@desc here=Welcome to the Macross: New Horizon chargen! These rooms will guide you through the chargen process and help you with creating your character. Before you can go through this process you will need a new character. A new character requires two things, a name and a password. Below is the command to create a character:%r%r[ansi(ch,+create <name>:<password>)]%r%rNote: Admin reserve the right to rename your character if it uses an inappropriate name.
+@desc here=Welcome to the Macross: New Horizon chargen! These rooms will guide you through the chargen process and help you with creating your character. Before you can go through this process you will need a new character. A new character requires two things, a name and a password. Below is the command to create a character:%r%r[ansi(ch,+create <name>:<password>)]%r%rNote: Admin reserve the right to rename your character if it uses an inappropriate name.%r%r[ansi(rh,THIS CHARGEN IS CURRENTLY ONLY FOR ROCs. PLEASE USE THE OLDER METHOD FOR OTHER CHARACTER TYPES.)]
 
 !--
 
@@ -41,7 +44,7 @@ In:
     %1 - Password
 !//
 
-&cmd_+create here=$+create *\:*:think [u(#1489/create,[secure([decompose(%0)])],[secure([decompose(%1)])])]
+&cmd_+create here=$+create *\:*:think [u(#1489/create,[secure([decompose(%0)])],[secure([decompose(%1)])])];@switch %q<created>=1,@fo %q<newDbref>=@channel/on Public,1,@fo %q<newDbref>=@channel/on H-Help,1,@fo %q<newDbref>=@channel/on RP
 
 !--
 
@@ -113,13 +116,15 @@ Registers Out:
     newDbref - Dbref of the newly created character.
 !//
 
-&create`createchar #1489=[u(create`createchar`chargenlimit)][u(create`createchar`charbit,%0,%1)][switch(%q<newDbref>,#-1,[u(create`fail)],[u(create`setup,%1)])]
+&create`createchar #1489=[u(create`createchar`chargenlimit)][u(create`createchar`charbit,%0,%1)][switch(%q<newDbref>,#-1,[u(create`fail)],[u(create`notice)][u(create`setup,%1)])]
 
 &create`createchar`chargenlimit #1489=[attrib_set(%#/chargen`limit,[secs()])][set(%#/chargen`limit,w)][set(%#/chargen`limit,m)][attrib_set(%#/chargen`limit`host,[get(%#/lastsite)])][if([haspower(%#,Guest)],[attrib_set(%#/chargen`limit`count,[if([hasattrval(%#/chargen`limit`count)],[add(1,[get(%#/chargen`limit`count)])],1)])])][set(%#/chargen,m)][set(%#/chargen,d)]
 
 &create`createchar`charbit #1489=[setq(newDbref,[pcreate(%0,%1)])]
 
 &create`fail #1489=[pemit(%#,Error - Could not create character. Most likely invalid characters in name.)]
+
+&create`notice #1489=[u(chargenchannel`create)]
 
 !--
 
@@ -143,10 +148,10 @@ Registers
 &create`setup`nominationsreset #1489=[iter([lattr(#751/*`%q<newDbref>)],[attrib_set(#751/[itext(0)])])][attrib_set(#780/medals.received`%q<newDbref>)]
 
 /// A basic setup for all characters.
-&create`setup`basic #1489=[attrib_set(%q<newDbref>/homeloc,#9)][setq(locks,homeloc)][attrib_set(%q<newDbref>/mem_faction,0)][attrib_set(%q<newDbref>/adescribe,think \%N just looked at your description.)][attrib_set(%q<newDbref>/afinger,1)][set(%q<newDbref>,color)][setq(locks,%q<locks> mem_faction)]
+&create`setup`basic #1489=[attrib_set(%q<newDbref>/homeloc,#22)][setq(locks,homeloc)][attrib_set(%q<newDbref>/mem_faction,0)][attrib_set(%q<newDbref>/adescribe,think \%N just looked at your description.)][attrib_set(%q<newDbref>/afinger,1)][set(%q<newDbref>,color)][set(%q<newDbref>,ansi)][setq(locks,%q<locks> mem_faction)]
 
 /// Sets all the character's stats and skills to 0, and HP and SP to base levels.
-&create`setup`sheet #1489=[iter([lattr(#80/XY`*)],[attrib_set(%q<newDbref>/##,0)])][attrib_set(%q<newDbref>/xy`7,100)][attrib_set(%q<newDbref>/xy`7`c,100)][attrib_set(%q<newDbref>/xy`8,100)][attrib_set(%q<newDbref>/xy`8`c,100)][setq(locks,%q<locks> xy)]
+&create`setup`sheet #1489=[iter([lattr(#80/XY`*)],[attrib_set(%q<newDbref>/##,0)][attrib_set(%q<newDbref>/##`c,0)])][attrib_set(%q<newDbref>/xy`7,100)][attrib_set(%q<newDbref>/xy`7`c,100)][attrib_set(%q<newDbref>/xy`8,100)][attrib_set(%q<newDbref>/xy`8`c,100)][setq(locks,%q<locks> xy)]
 
 /// Locks all the attributes that need to be locked.
 &create`setup`lock #1489=[iter(%q<locks>,[set(%q<newDbref>/##,w)][set(%q<newDbref>/##,m)])]
@@ -165,13 +170,15 @@ Registers In:
 	
 Registers:
 	appDbref - Dbref of the object that represents the app.
+	
+Registers Out:
+	created - Checked later to confirm char was created in order to make it join channels.
 !//
 
-&create`setup`chargen #1489=[attrib_set(#1489/db`%q<newDbref>,%q<appDbref>|[secs()])][u(create`setup`chargen`createobject)][u(create`setup`chargen`prepare)]
+&create`setup`chargen #1489=[u(create`setup`chargen`createobject)][u(create`setup`chargen`prepare)][setq(created,1)]
 
 &create`setup`chargen`createobject #1489=[if([setr(appDbref,[create([name(%q<newDbref>)] App)])],,[pemit(%#,Error - Could not create application object. Please contact an admin before continuing the chargen process.)])]
 
-&create`setup`chargen`prepare #1489=[attrib_set(#1489/db`%q<newDbref>,%q<appDbref>|[secs()])][attrib_set(%q<appDbref>/status,NS)][attrib_set(%q<appDbref>/room2`status,I)][attrib_set(%q<appDbref>/room3`status,I)][attrib_set(%q<appDbref>/room3`ctype,ROC)][attrib_set(%q<appDbref>/room4`status,I)][attrib_set(%q<appDbref>/room5`status,I)][attrib_set(%q<appDbref>/room6`status,I)][attrib_set(%q<appDbref>/room6`lck,[u(#1489/room6`runluck)])]
-
+&create`setup`chargen`prepare #1489=[attrib_set(#1489/db`%q<newDbref>,[add(1,[u(getjobcount)])]|%q<appDbref>|[secs()])][attrib_set(%q<appDbref>/dbref,%q<newDbref>)][u(setStatus,NS,%q<newDbref>)][iter(2 3 4 5 6 7 8,[u(setRoom%i0Status,I,%q<newDbref>)])][u(setRoom3CType,ROC,%q<newDbref>)][attrib_set(%q<appDbref>/room6`lck,[u(#1489/room6`runluck)])][attrib_set(%q<appDbref>/jobno,[add(1,[u(getjobcount)])])][u(increaseJobCount)][attrib_set(%q<appDbref>/handler,None)]
 
 !--

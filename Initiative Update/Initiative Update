@@ -1,0 +1,156 @@
+Filename: Initiative Update
+Date: October 2014
+Programmer: Vincent Cross
+
+Purpose:
+
+The +initiative command needs to be updated to run the newer check code. Initiative works by having Sensors and Stealth rolled for vehicles, Stealth and Security on foot. The two are combined and whoever has the highest total goes first, second highest goes second, and so on.
+
+Player Concealment: xy`209`c
+Player Security: xy`431`c
+
+Vehicle Stealth: xy`e`c
+Vehicle Sensors: xy`f`c
+
+Combat System Commands: #1418
+Full Combat System: #1419
+
+
+-- Old +initiative code
+
+//
+1: Location of Player
+2: space list of player dbrefs
+3: Threshold of Concealment
+4: Threshold of EW/Security
+5: | list of totals and player dbrefs
+!//
+&initsort #1001=[comp([before(%1,:)],[before(%0,:)],N)]
+
+&initiative_cmd #838=$+initiative:think [setq(1,[if([get([loc(%#)]/vehicle)],[loc([loc(%#)])],[loc(%#)])])][setq(2,[setunion([lvplayers(%q1)]%b[iter([lcon(%q1)],[if([get([itext(0)]/vehicle)],[lvplayers([itext(0)])],[null()])])],)])][u(#1001/initiative.run)]
+
+[set([if([get([loc(%#)]/vehicle)],[loc([loc(%#)])],[loc(%#)])],initorder:[sortby(#1001/initsort,%q5,|,|)])][remit([loc(%#)],[ansi(ch,%N has called for initiative. A new [ansi(wh,+order)] has been created.)])]
+
+&initiative.run #1001=[u(initiative.run`check.1)][setq(5,[iter(%q2,[setq(3,0)][setq(4,0)][setq(3,[add(5,[switch([get([itext(0)]/XY`2)],1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,9,9,11,10,14,0)],[if([get([loc([itext(0)])]/vehicle)],[get([loc([itext(0)])]/xy`e)],0)])])][setq(3,[add([switch([get([itext(0)]/XY`209)],1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,9,9,11,10,14,0)],%q3)])][setq(4,[add(5,[switch([get([if([hasattrval([loc(%i0)],link.active)],[get([loc(%i0)]/link.active)],%i0)]/XY`4)],1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,9,9,11,10,14,0)],[if([get([loc([if([hasattrval([loc(%i0)],link.active)],[get([loc(%i0)]/link.active)],%i0)])]/vehicle)],[get([loc([if([hasattrval([loc(%i0)],link.active)],[get([loc(%i0)]/link.active)],%i0)])]/xy`f)],0)])])][setq(4,[add([switch([get([if([hasattrval([loc(%i0)],link.active)],[get([loc(%i0)]/link.active)],%i0)]/XY`[if([get([loc([if([hasattrval([loc(%i0)],link.active)],[get([loc(%i0)]/link.active)],%i0)])]/vehicle)],433,431)])],1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,9,9,11,10,14,0)],%q4)])][add([sub(%q3,[setr(r,[die(1,[if([get([loc([itext(0)])]/vehicle)],100,40)])])])],[sub(%q4,[setr(t,[die(1,[if([get([loc([itext(0)])]/vehicle)],100,40)])])])])]:[itext(0)]:%q3:%q4,,|)])]
+
+&initiative.run`check.1 #1001=[iter(%q2,[if([hasattrval([loc(%i0)],link.active)],[if([match([loc([loc(%i0)])],[loc([loc([get([loc(%i0)]/link.active)])])])],,[pemit(%i0,[ansi(ch,Your datalink with [ansi(wh,[name([get([loc(%i0)]/link.active)])])] has been broken as their vehicle is no longer in the same room.)])][pemit([get([loc(%i0)]/link.active)],[ansi(ch,Your datalink with [ansi(wh,[name(%i0)])] has been broken as you moved your vehicle to a different room.)])][attrib_set([loc(%i0)]/link.active)])])])]
+
+!--
+
+-- command +initiative
+//
+This command is used to create an entirely new +initiative list. It runs the checks against the player's skills or their vehicle stats, also taking into consideration if they have a datalink or not.
+
+Out:
+	A list of initiative viewable using +order.
+!//
+
+&cmd_+initiative #1418=$+initiative:think [u(#1419/init)]
+
+!--
+
+-- function init
+//
+The main runcode for the +initiative command. First there is the setup, which returns a list of players and the room where the init order will go. It then checks if any existing datalinks on the player vehicles need to be broken before init begins. It then runs the main process. Finally it sets the init list to the room.
+
+Registers:
+	roomlocation - The dbref of the room where the init will be.
+	playerlist - List of dbrefs of players who will be in the init.
+	initlist - A | deliminated list of <init>:<dbref>
+	error - Error system used by the combat code. 0 means no errors to start.
+
+Out:
+	A list of initiative viewable using +order.
+!//
+
+&init #1419=[setq(error,0)][u(init`setup)][u(init`datalink)][u(init`run)][u(func`cango,init`setlist,1)]
+
+&init`run #1419=[setq(initlist,[iter(%q<playerlist>,[u(init`run`getinit,%i0)]:%i0,%b,|)])]
+
+/// %0 - Player dbref
+&init`run`getinit #1419=[if([get([loc(%0)]/vehicle)],[round([u(init`run`getinit`vehicle,%0)],0)],[round([u(init`run`getinit`person,%0)],0)])]
+
+/// %0 - Player dbref
+&init`run`getinit`vehicle #1419=[if([hasattrval([loc(%0)],link.active)],[add([last([u(check,Stealth,[get([loc(%0)]/link.active)])],|)],[last([u(check,Sensors,[get([loc(%0)]/link.active)])],|)])],[add([last([u(check,Stealth,%0)],|)],[last([u(check,Sensors,%0)],|)])])]
+
+/// %0 - Player dbref
+&init`run`getinit`person #1419=[add([last([u(check,Security,%0)],|)],[last([u(check,Concealment,%0)],|)]
+
+/// %0 - 1 if new init, else new round
+&init`setlist #1419=[set([if([get([loc(%#)]/vehicle)],[loc([loc(%#)])],[loc(%#)])],initorder:[sortby(#1419/init`sort,%q<initlist>,|,|)])][remit([loc(%#)],[ansi(ch,%N has called for [if(%0,initiative,a new round)]. A new [ansi(wh,+order)] has been created.)])]
+
+&init`sort #1419=[comp([before(%1,:)],[before(%0,:)],N)]
+!--
+
+-- function init`setup
+//
+Determines where the init order will be placed and who will be in it.
+
+Registers Out:
+	roomlocation - The dbref of the room where the init will be.
+	playerlist - List of dbrefs of players who will be in the init.
+!//
+
+&init`setup #1419=[u(init`setup`roomlocation)][u(init`setup`playerlist)]
+
+&init`setup`roomlocation #1419=[setq(roomlocation,[if([get([loc(%#)]/vehicle)],[loc([loc(%#)])],[loc(%#)])])]
+
+&init`setup`playerlist #1419=[setq(playerlist,[setunion([lvplayers(%q<roomlocation>)]%b[iter([lcon(%q<roomlocation>)],[if([get([itext(0)]/vehicle)],[lvplayers([itext(0)])],[null()])])],)])]
+
+!--
+
+-- function init`datalink
+//
+Checks to see if any existing datalinks on the player vehicles need to be removed due to the fact that the person who they are linked to is no longer in the room.
+
+Registers In:
+	playerlist - List of dbrefs of players who will be in the init.
+	
+Attributes In:
+	link.active - On a vehicle, records who the vehicle currently has a link with
+!//
+
+&init`datalink #1419=[iter(%q<playerlist>,[if([hasattrval([loc(%i0)],link.active)],[u(init`datalink`check,%i0)])])]
+
+/// %0 - player dbref to check
+&init`datalink`check #1419=[if([not([match([loc([loc(%0)])],[u(init`datalink`check`linklocation,[get([loc(%0)]/link.active)])])])],[u(init`datalink`break,%0)])]
+
+/// Returns a dbref for the room where the datalink originated from.
+/// %0 - dbref of originator
+&init`datalink`check`linklocation #1419=[if([get([loc(%0)]/vehicle)],[loc([loc(%0)])],[loc(%0)])]
+
+&init`datalink`break #1419=[pemit(%0,[ansi(ch,Your datalink with [ansi(wh,[name([get([loc(%0)]/link.active)])])] has been broken as [poss([get([loc(%0)]/link.active)])] vehicle is no longer in the same room.)])][pemit([get([loc(%0)]/link.active)],[ansi(ch,Your datalink with [ansi(wh,[name(%0)])] has been broken as you moved your vehicle to a different room.)])][attrib_set([loc(%0)]/link.active)]
+
+!--
+
+-- Old +round code
+
+&initround_cmd #838=$+round:think [setq(2,[graball([get([setr(l,[if([get([loc(%#)]/vehicle)],[loc([loc(%#)])],[loc(%#)])])]/initorder)],#*,:,%b)])][u(#1001/link`round,%q2)][setq(t,%q2)][u(#1001/initiative.run)][set([if([get([loc(%#)]/vehicle)],[loc([loc(%#)])],[loc(%#)])],initorder:[sortby(#1001/initsort,%q5,|,|)])][remit([loc(%#)],[ansi(ch,%N has called for a new round. A new [ansi(wh,+order)] has been created.)])]
+
+!--
+
+-- command +round
+//
+When called, runs new initiative for all the players in the existing list of initiative.
+
+Out:
+	Creates a new initorder on the room.
+!//
+
+&cmd_+round #1418=$+round:think [u(#1419/round)]
+
+!--
+
+-- function round
+//
+Main run code for the +round command. Grabs the list of players currently in the initiative list and then builds a new one containing only those players.
+
+Registers:
+	playerlist - List of players in the existing init list
+	initlist - New init list from init`run
+!//
+&round #1419=[setq(error,0)][u(round`getcurrentplayers)][u(init`run)][u(func`cango,init`setlist,0)]
+
+&round`getcurrentplayers #1419=[setq(playerlist,[graball([get([setr(l,[if([get([loc(%#)]/vehicle)],[loc([loc(%#)])],[loc(%#)])])]/initorder)],*#*,|,%b)])][setq(playerlist,[iter(%q<playerlist>,[last(%i0,:)])])]
+
+!--

@@ -1,0 +1,64 @@
+Filename: Cron
+Date: November 2014
+Programmer: Vincent Cross
+
+Purpose:
+
+This file contains the code related to the chargen system that is called by the MUSH's CRON. There will be atleast two such calls, one to regularly report any apps awaiting approval & unhandled apps, then one to clean the database of old apps.
+
+-- function appswaiting
+//
+This function is intended to be called by the CRON in order to alert staff of any apps currently awaiting approval.
+
+Registers:
+	applist - List of apps by player dbref
+	submitted - List of apps which have been submitted
+	unhandled - List of apps which have no handler.
+
+!//
+
+&cron_time_appswaiting #740=|||03 06 09 12 15 18 21 23|00|
+&cron_job_appswaiting #740=@trigger #1489/appswaiting
+
+&appswaiting #1489=[u(appswaiting`getlist)][u(appswaiting`refinelist)][if([words(%q<applist>)],[u(appswaiting`printlist)])]
+
+&appswaiting`getlist #1489=[setq(applist,[iter([lattr(me/db`*)],[after(%i0,`)])])]
+
+&appswaiting`refinelist #1489=[setq(submitted,[iter(%q<applist>,[switch([u(getStatus,%i0)],S,%i0)])])][setq(unhandled,[iter(%q<applist>,[if([u(hasHandler,%i0)],,%i0)])])]
+
+&appswaiting`printlist #1489=[u(chargenchannel`appswaiting)]
+
+!--
+
+-- function cleanapps
+//
+This function gets called by the cron every day. It checks the 'last updated' field of apps in the queue and then moves them to the archive if they are older than 2 weeks, removing them from the queue.
+
+Registers:
+	applist - List of apps by player dbref
+	count - Number of apps cleaned
+!//
+
+&cron_time_cleanapps #740=|||20|00|
+&cron_job_cleanapps #740=@trigger #1489/cleanapps
+
+&cleanapps #1489=[setq(count,0)][u(cleanapps`getlist)][u(cleanapps`clean)][if(%q<count>,[u(cleanapps`clean`chargenmsg)])]
+
+&cleanapps`getlist #1489=[u(appswaiting`getlist)]
+
+&cleanapps`clean #1489=[iter(%q<applist>,[u(cleanapps`clean`checkapp,%i0)])]
+
+&cleanapps`clean`checkapp #1489=[if([gt([sub([secs()],[u(getUpdate,%0)])],[v(cleanapps`clean`timeout)])],[u(cleanapps`clean`run,%0)])]
+
+&cleanapps`clean`timeout #1489=2592000
+
+&cleanapps`clean`run #1489=[u(cleanapps`clean`tel,%0)][u(cleanapps`clean`alterdb,%0)][setq(count,[add(1,%q<count>)])]
+
+&cleanapps`clean`tel #1489=[tel([u(getapp,%0)],[v(deadarchive)])]
+
+&cleanapps`clean`alterdb #1489=[attrib_set(#1489/db`%0)]
+
+&cleanapps`clean`chargenmsg #1489=[u(chargenchannel`clean)]
+
+
+!--
